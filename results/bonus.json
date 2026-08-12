@@ -1,0 +1,191 @@
+{
+  "question": "What does ERR-4032 mean, what is the fix, and what happens to the invoice number after I reissue the invoice?",
+  "budgets": [
+    5,
+    1
+  ],
+  "runs": {
+    "baseline_k5": {
+      "k": 5,
+      "strategy": "baseline",
+      "answer": "ERR-4032 means that the invoice line item references a legacy tax code that no longer exists in BL2, because the migration could not map it automatically [HC-4002-baseline-003]. To fix this, you need to re-map the line item to a current tax code under Billing then Tax Codes, and then reissue the invoice [HC-4002-baseline-003]. When an invoice is corrected and reissued, it keeps the original invoice number and gains a revision suffix, such as `EU-2026-0004417-R2` [HC-4002-baseline-001]. The revision suffix increments on every reissue [HC-4002-baseline-001].",
+      "refused": false,
+      "parts_answered": {
+        "meaning": true,
+        "fix": true,
+        "numbering": true
+      },
+      "parts_score": 3,
+      "err4032_row_retrieved": true,
+      "numbering_prose_retrieved": true,
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.8169,
+          "chunk_id": "HC-4002-baseline-004",
+          "article_id": "HC-4002",
+          "char_len": 965,
+          "has_err4032": false,
+          "has_numbering_prose": false
+        },
+        {
+          "rank": 2,
+          "score": 0.8106,
+          "chunk_id": "HC-4002-baseline-003",
+          "article_id": "HC-4002",
+          "char_len": 802,
+          "has_err4032": true,
+          "has_numbering_prose": false
+        },
+        {
+          "rank": 3,
+          "score": 0.7837,
+          "chunk_id": "HC-4005-baseline-004",
+          "article_id": "HC-4005",
+          "char_len": 403,
+          "has_err4032": false,
+          "has_numbering_prose": false
+        },
+        {
+          "rank": 4,
+          "score": 0.7807,
+          "chunk_id": "HC-4003-baseline-004",
+          "article_id": "HC-4003",
+          "char_len": 894,
+          "has_err4032": false,
+          "has_numbering_prose": false
+        },
+        {
+          "rank": 5,
+          "score": 0.7758,
+          "chunk_id": "HC-4002-baseline-001",
+          "article_id": "HC-4002",
+          "char_len": 806,
+          "has_err4032": false,
+          "has_numbering_prose": true
+        }
+      ],
+      "citations": [
+        "HC-4002-baseline-003",
+        "HC-4002-baseline-001"
+      ]
+    },
+    "structured_k5": {
+      "k": 5,
+      "strategy": "structured",
+      "answer": "The error code ERR-4032 means that the invoice line item references a legacy tax code that no longer exists in BL2, and the migration could not map it automatically [HC-4002-structured-004]. To fix this, you need to re-map the line item to a current tax code under Billing then Tax Codes, and then reissue the invoice [HC-4002-structured-004]. When an invoice is reissued, it keeps the original invoice number and gains a revision suffix, such as `EU-2026-0004417-R2` [HC-4002-structured-001]. The revision suffix increments on every reissue [HC-4002-structured-001].",
+      "refused": false,
+      "parts_answered": {
+        "meaning": true,
+        "fix": true,
+        "numbering": true
+      },
+      "parts_score": 3,
+      "err4032_row_retrieved": true,
+      "numbering_prose_retrieved": true,
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.8106,
+          "chunk_id": "HC-4002-structured-004",
+          "article_id": "HC-4002",
+          "char_len": 802,
+          "has_err4032": true,
+          "has_numbering_prose": false
+        },
+        {
+          "rank": 2,
+          "score": 0.8098,
+          "chunk_id": "HC-4002-structured-005",
+          "article_id": "HC-4002",
+          "char_len": 761,
+          "has_err4032": false,
+          "has_numbering_prose": false
+        },
+        {
+          "rank": 3,
+          "score": 0.8018,
+          "chunk_id": "HC-4005-structured-004",
+          "article_id": "HC-4005",
+          "char_len": 446,
+          "has_err4032": false,
+          "has_numbering_prose": false
+        },
+        {
+          "rank": 4,
+          "score": 0.7758,
+          "chunk_id": "HC-4002-structured-001",
+          "article_id": "HC-4002",
+          "char_len": 806,
+          "has_err4032": false,
+          "has_numbering_prose": true
+        },
+        {
+          "rank": 5,
+          "score": 0.7726,
+          "chunk_id": "HC-4002-structured-006",
+          "article_id": "HC-4002",
+          "char_len": 519,
+          "has_err4032": false,
+          "has_numbering_prose": false
+        }
+      ],
+      "citations": [
+        "HC-4002-structured-004",
+        "HC-4002-structured-001"
+      ]
+    },
+    "baseline_k1": {
+      "k": 1,
+      "strategy": "baseline",
+      "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: ERR-4032 meaning, fix, and impact on invoice number after reissuing",
+      "refused": true,
+      "parts_answered": {
+        "meaning": false,
+        "fix": false,
+        "numbering": false
+      },
+      "parts_score": 0,
+      "err4032_row_retrieved": false,
+      "numbering_prose_retrieved": false,
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.8169,
+          "chunk_id": "HC-4002-baseline-004",
+          "article_id": "HC-4002",
+          "char_len": 965,
+          "has_err4032": false,
+          "has_numbering_prose": false
+        }
+      ],
+      "citations": []
+    },
+    "structured_k1": {
+      "k": 1,
+      "strategy": "structured",
+      "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: what happens to the invoice number after I reissue the invoice",
+      "refused": true,
+      "parts_answered": {
+        "meaning": false,
+        "fix": true,
+        "numbering": false
+      },
+      "parts_score": 1,
+      "err4032_row_retrieved": true,
+      "numbering_prose_retrieved": false,
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.8106,
+          "chunk_id": "HC-4002-structured-004",
+          "article_id": "HC-4002",
+          "char_len": 802,
+          "has_err4032": true,
+          "has_numbering_prose": false
+        }
+      ],
+      "citations": []
+    }
+  }
+}

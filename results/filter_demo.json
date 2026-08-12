@@ -1,0 +1,150 @@
+{
+  "query": "How do retries work after the migration?",
+  "strategy": "structured",
+  "filter": {
+    "product_area": "api"
+  },
+  "unfiltered": [
+    {
+      "rank": 1,
+      "score": 0.7281,
+      "chunk_id": "HC-4001-structured-002",
+      "article_id": "HC-4001",
+      "source_file": "HC-4001-billing-migration-overview.md",
+      "product_area": "billing_core",
+      "last_updated": "2026-06-02",
+      "has_table_header": false,
+      "orphan_table_rows": false,
+      "char_len": 980,
+      "text": "Agents should know three things before taking migration tickets. First, every\naccount was migrated, including cancelled accounts that still carry an open\nbalance. Second, invoice history was copied and not moved, so the legacy read-only\narchive stays available for 18 months after cutover. Third, during the Phase 3\ncutover the billing ledger is read-only for four hours. Inside that window a\ncustomer can view invoices but cannot pay, change a plan, or update a card. If a\ncustomer reports that \"the pay button does nothing\" and the timestamp falls inside\nthe freeze, that is expected behaviour and not a fault. Do not raise a payments\nincident for it.\n\nThe migration did not change prices. It did change invoice numbering, tax\nhandling, the payment token format, and the billing API surface. Each of those has\nits own article. Always confirm which of the four the customer is actually hitting\nbefore you troubleshoot, because the error codes overlap in wording but not in\ncause."
+    },
+    {
+      "rank": 2,
+      "score": 0.7172,
+      "chunk_id": "HC-4006-structured-005",
+      "article_id": "HC-4006",
+      "source_file": "HC-4006-billing-api-and-webhooks.md",
+      "product_area": "api",
+      "last_updated": "2026-06-20",
+      "has_table_header": false,
+      "orphan_table_rows": false,
+      "char_len": 805,
+      "text": "## Webhook delivery and retries\n\nA webhook delivery that does not return a 2xx within 10 seconds is treated as\nfailed. Failed deliveries are retried with exponential backoff over 24 hours, at\nroughly 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours and 24 hours. After the\nfinal attempt the event is dropped and is not recoverable from the API.\n\nRetries are per endpoint, not per event. If an endpoint is failing, every event\nqueued for it backs off together. A customer who fixes their endpoint mid-backoff\nwill receive the queued events on the next scheduled attempt, not immediately.\n\nSignature verification did not change, but the signed payload now includes the\nevent name. Customers who verify signatures against a stored template must update\nthat template or every delivery will fail verification."
+    },
+    {
+      "rank": 3,
+      "score": 0.7103,
+      "chunk_id": "HC-4001-structured-004",
+      "article_id": "HC-4001",
+      "source_file": "HC-4001-billing-migration-overview.md",
+      "product_area": "billing_core",
+      "last_updated": "2026-06-02",
+      "has_table_header": false,
+      "orphan_table_rows": false,
+      "char_len": 252,
+      "text": "## Migration status codes on the account page\n\nEvery account carries a migration status badge on the Billing tab. The badge is\nset once by the migration job and is never recalculated, so a stale badge is\npossible on accounts that were repaired by hand."
+    },
+    {
+      "rank": 4,
+      "score": 0.6824,
+      "chunk_id": "HC-4003-structured-001",
+      "article_id": "HC-4003",
+      "source_file": "HC-4003-payment-methods.md",
+      "product_area": "payments",
+      "last_updated": "2026-06-18",
+      "has_table_header": false,
+      "orphan_table_rows": false,
+      "char_len": 786,
+      "text": "# Payment Methods, Card Tokens and Decline Codes\n\n## What happened to stored cards\n\nEvery stored card was re-tokenised during cutover. The card number itself never\nmoved, because we never held it. What moved was the token issued by the payment\nprocessor. Customers do not need to do anything if their card was re-tokenised\nsuccessfully, and most were.\n\nTwo groups of cards were not migrated. Cards that had not been used for more than\n24 months were dropped, because the processor will not re-tokenise a dormant card.\nThose customers must add a payment method again before their next renewal.\nCustomers whose card had already expired were also dropped, for the same reason.\nIn both cases the account shows no default payment method, and renewal will fail\nsilently until a card is added."
+    },
+    {
+      "rank": 5,
+      "score": 0.6759,
+      "chunk_id": "HC-4001-structured-005",
+      "article_id": "HC-4001",
+      "source_file": "HC-4001-billing-migration-overview.md",
+      "product_area": "billing_core",
+      "last_updated": "2026-06-02",
+      "has_table_header": true,
+      "orphan_table_rows": false,
+      "char_len": 920,
+      "text": "| Code | Badge text | Meaning | Agent action |\n|---|---|---|---|\n| MIG-100 | Migrated | The account moved cleanly. Balances match to the cent. | None. Treat the account as normal. |\n| MIG-140 | Migrated with rounding | Balance differs from BL1 by less than 0.05 in account currency. The difference was written off automatically. | None. Explain the write-off if the customer asks. |\n| MIG-220 | Partial | Invoices moved but at least one credit note failed to import. | Open a Billing Ops ticket with the account ID. Do not reissue invoices yourself. |\n| MIG-310 | Deferred | The account was skipped because a payment was in flight at cutover. It is retried nightly. | Wait one night. Escalate only if the badge is unchanged after 48 hours. |\n| MIG-450 | Blocked | The account has a legacy contract term that BL2 cannot represent. | Escalate to Billing Ops immediately. These accounts cannot self-serve any plan change. |"
+    }
+  ],
+  "filtered": [
+    {
+      "rank": 1,
+      "score": 0.7172,
+      "chunk_id": "HC-4006-structured-005",
+      "article_id": "HC-4006",
+      "source_file": "HC-4006-billing-api-and-webhooks.md",
+      "product_area": "api",
+      "last_updated": "2026-06-20",
+      "has_table_header": false,
+      "orphan_table_rows": false,
+      "char_len": 805,
+      "text": "## Webhook delivery and retries\n\nA webhook delivery that does not return a 2xx within 10 seconds is treated as\nfailed. Failed deliveries are retried with exponential backoff over 24 hours, at\nroughly 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours and 24 hours. After the\nfinal attempt the event is dropped and is not recoverable from the API.\n\nRetries are per endpoint, not per event. If an endpoint is failing, every event\nqueued for it backs off together. A customer who fixes their endpoint mid-backoff\nwill receive the queued events on the next scheduled attempt, not immediately.\n\nSignature verification did not change, but the signed payload now includes the\nevent name. Customers who verify signatures against a stored template must update\nthat template or every delivery will fail verification."
+    },
+    {
+      "rank": 2,
+      "score": 0.669,
+      "chunk_id": "HC-4006-structured-003",
+      "article_id": "HC-4006",
+      "source_file": "HC-4006-billing-api-and-webhooks.md",
+      "product_area": "api",
+      "last_updated": "2026-06-20",
+      "has_table_header": true,
+      "orphan_table_rows": false,
+      "char_len": 404,
+      "text": "| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/customers/{id}/balance` | removed | Balance is derived from the ledger. Use `GET /v2/billing/ledger/entries` and sum the open entries. |\n| `POST /v1/credits` | removed | Credit notes are created through the invoice, not directly. |\n| `GET /v1/plans` | removed | Plans are now a catalogue object. Use `GET /v2/catalogue/products`. |"
+    },
+    {
+      "rank": 3,
+      "score": 0.6503,
+      "chunk_id": "HC-4006-structured-004",
+      "article_id": "HC-4006",
+      "source_file": "HC-4006-billing-api-and-webhooks.md",
+      "product_area": "api",
+      "last_updated": "2026-06-20",
+      "has_table_header": true,
+      "orphan_table_rows": false,
+      "char_len": 911,
+      "text": "## Webhook event renames\n\nEvery event moved to a `billing.` namespace. Old event names are no longer sent at\nall, so an endpoint listening for the old name goes quiet rather than erroring.\nThis is the single most common reason a customer reports \"webhooks stopped\nworking\" after migration.\n\n| v1 event name | v2 event name | Note |\n|---|---|---|\n| `invoice.created` | `billing.invoice.created` | Payload unchanged except for the `number` field. |\n| `invoice.payment_succeeded` | `billing.invoice.paid` | Renamed and reworded. Fires once, after ledger settlement, not on processor approval. |\n| `invoice.payment_failed` | `billing.invoice.payment_failed` | Now includes the dunning `attempt` number. |\n| `subscription.updated` | `billing.subscription.updated` | Fires for seat changes too, which v1 did not. |\n| `customer.balance_changed` | removed | No replacement. Derive from `billing.ledger.entry_created`. |"
+    },
+    {
+      "rank": 4,
+      "score": 0.6442,
+      "chunk_id": "HC-4006-structured-002",
+      "article_id": "HC-4006",
+      "source_file": "HC-4006-billing-api-and-webhooks.md",
+      "product_area": "api",
+      "last_updated": "2026-06-20",
+      "has_table_header": true,
+      "orphan_table_rows": false,
+      "char_len": 901,
+      "text": "## Endpoint mapping\n\n| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/invoices` | `GET /v2/billing/invoices` | Pagination is cursor-based. The `page` parameter is ignored and returns the first page silently. |\n| `GET /v1/invoices/{id}` | `GET /v2/billing/invoices/{id}` | The `number` field now includes a revision suffix on reissued invoices. |\n| `POST /v1/invoices/{id}/pay` | `POST /v2/billing/invoices/{id}/payments` | Returns 202 and settles asynchronously. Callers that assumed a synchronous 200 will misreport failures. |\n| `GET /v1/subscriptions` | `GET /v2/billing/subscriptions` | The `plan` field returns the new capability-tier name, not the legacy seat-count name. |\n| `POST /v1/subscriptions/{id}/cancel` | `POST /v2/billing/subscriptions/{id}/cancellations` | Cancellation is now scheduled at period end by default. Pass `immediate=true` for the old behaviour. |"
+    },
+    {
+      "rank": 5,
+      "score": 0.6407,
+      "chunk_id": "HC-4006-structured-001",
+      "article_id": "HC-4006",
+      "source_file": "HC-4006-billing-api-and-webhooks.md",
+      "product_area": "api",
+      "last_updated": "2026-06-20",
+      "has_table_header": false,
+      "orphan_table_rows": false,
+      "char_len": 748,
+      "text": "# Billing API and Webhook Changes\n\n## Versioning and sunset\n\nThe billing API moved from v1 to v2 at cutover. Both versions answer today. The v1\nendpoints stop responding on 30 September 2026. After that date a v1 request\nreturns HTTP 410 with no body. There is no extension process, and customers who\nask for one should be routed to their account manager rather than told no by an\nagent.\n\nThe v2 API is not a superset of v1. Three v1 endpoints have no v2 equivalent at\nall, because the underlying concept no longer exists. Those are listed below as\n\"removed\". Customers relying on them need a code change, not a URL change.\n\nAuthentication did not change. The same API keys work against both versions. Keys\nissued before migration were not rotated."
+    }
+  ],
+  "top1_changed": true,
+  "unfiltered_areas": [
+    "api",
+    "billing_core",
+    "payments"
+  ],
+  "filtered_areas": [
+    "api"
+  ]
+}
