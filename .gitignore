@@ -14,3 +14,7 @@ venv/
 # OS
 Thumbs.db
 .DS_Store
+
+# Generated run logs
+results/_*.log
+results/_*.txt

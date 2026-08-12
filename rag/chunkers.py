@@ -180,16 +180,26 @@ def chunk_structured(body: str) -> list[str]:
     def buf_len() -> int:
         return sum(len(p) for p in buf) + 2 * max(len(buf) - 1, 0)
 
+    def buf_is_only_headings() -> bool:
+        """True when the buffer holds headings and nothing else."""
+        return bool(buf) and all(p.lstrip().startswith("#") for p in buf)
+
     def flush() -> None:
-        if buf:
+        # A heading with no content under it is not a retrievable unit. Emitting
+        # it as its own chunk creates a short, high-similarity decoy that can
+        # outrank real content, so drop it instead.
+        if buf and not buf_is_only_headings():
             chunks.append("\n\n".join(buf).strip())
-            buf.clear()
+        buf.clear()
 
     for block in blocks:
         if block.kind == BLOCK_HEADING:
-            # A heading opens a section, so it starts a new chunk and stays
-            # attached to the content that follows it.
-            flush()
+            # A heading opens a section and stays attached to the content that
+            # follows it. Consecutive headings (an article title immediately
+            # followed by a section heading) accumulate rather than each
+            # becoming a chunk of its own.
+            if not buf_is_only_headings():
+                flush()
             buf.append(block.text)
             continue
 
@@ -199,12 +209,11 @@ def chunk_structured(body: str) -> list[str]:
             if len(whole) <= size and buf_len() + len(whole) + 2 <= size:
                 buf.append(whole)
                 continue
-            # Large table: it becomes its own row-groups. If only a heading is
-            # buffered, carry that heading onto the first group instead of
-            # emitting a heading-only chunk.
+            # Large table: it becomes its own row-groups. If only headings are
+            # buffered, carry them onto the first group instead of losing them.
             lead = ""
-            if len(buf) == 1 and buf[0].lstrip().startswith("#"):
-                lead = buf[0]
+            if buf_is_only_headings():
+                lead = "\n\n".join(buf)
                 buf.clear()
             else:
                 flush()

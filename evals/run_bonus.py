@@ -41,98 +41,108 @@ def score_parts(text: str) -> dict:
     }
 
 
+# Two retrieval budgets. k=5 is the budget used everywhere else in this
+# write-up. k=1 is the tight budget, where a chunker's precision and its
+# completeness pull hardest against each other.
+BUDGETS = (5, 1)
+
+
+def run_one(question: str, strategy: str, k: int) -> dict:
+    ans = answer_question(question, strategy, k=k, use_gate=True)
+    parts = score_parts(ans.answer)
+    return {
+        "k": k,
+        "strategy": strategy,
+        "answer": ans.answer,
+        "refused": ans.refused,
+        "parts_answered": parts,
+        "parts_score": sum(parts.values()),
+        "err4032_row_retrieved": any("err-4032" in h["text"].lower() for h in ans.retrieved),
+        "numbering_prose_retrieved": any(
+            "revision suffix" in h["text"].lower() for h in ans.retrieved
+        ),
+        "retrieved": [
+            {
+                "rank": h["rank"],
+                "score": h["score"],
+                "chunk_id": h["chunk_id"],
+                "article_id": h["article_id"],
+                "char_len": h["char_len"],
+                "has_err4032": "err-4032" in h["text"].lower(),
+                "has_numbering_prose": "revision suffix" in h["text"].lower(),
+            }
+            for h in ans.retrieved
+        ],
+        "citations": [c.chunk_id for c in ans.citations],
+    }
+
+
 def run() -> dict:
     q = BONUS_QUESTION["question"]
-    results = {}
-    for strategy in STRATEGIES:
-        print(f"  generating bonus / {strategy} ...")
-        ans = answer_question(q, strategy, use_gate=True)
-        parts = score_parts(ans.answer)
-        # Did the prose sentence reach the model at all?
-        prose_in_context = any(
-            "revision suffix" in h["text"].lower() for h in ans.retrieved
-        )
-        table_row_in_context = any(
-            "err-4032" in h["text"].lower() for h in ans.retrieved
-        )
-        results[strategy] = {
-            "answer": ans.answer,
-            "refused": ans.refused,
-            "parts_answered": parts,
-            "parts_score": sum(parts.values()),
-            "err4032_row_retrieved": table_row_in_context,
-            "numbering_prose_retrieved": prose_in_context,
-            "retrieved": [
-                {
-                    "rank": h["rank"],
-                    "score": h["score"],
-                    "chunk_id": h["chunk_id"],
-                    "article_id": h["article_id"],
-                    "char_len": h["char_len"],
-                    "has_err4032": "err-4032" in h["text"].lower(),
-                    "has_numbering_prose": "revision suffix" in h["text"].lower(),
-                }
-                for h in ans.retrieved
-            ],
-            "citations": [c.chunk_id for c in ans.citations],
-        }
-    return {"question": q, "by_strategy": results}
+    runs: dict[str, dict] = {}
+    for k in BUDGETS:
+        for strategy in STRATEGIES:
+            print(f"  generating bonus / {strategy} / k={k} ...")
+            runs[f"{strategy}_k{k}"] = run_one(q, strategy, k)
+    return {"question": q, "budgets": list(BUDGETS), "runs": runs}
 
 
 def write_report(result: dict, path: Path) -> None:
-    b = result["by_strategy"]["baseline"]
-    s = result["by_strategy"]["structured"]
+    runs = result["runs"]
     lines = [
-        "# Bonus: the structure-aware chunker retrieves better and answers worse",
+        "# Bonus: precision against completeness",
         "",
         f"**Question:** {result['question']}",
         "",
-        "Three parts. Parts 1 and 2 live in one row of the invoice error table.",
-        "Part 3 lives in article prose, in a different section of HC-4002.",
+        "Three parts. Parts 1 and 2 live in one row of the invoice error table",
+        "in HC-4002. Part 3 lives in prose, in a different section of the same",
+        "article, several paragraphs from that table.",
         "",
-        "## Side by side",
+        "Run at two retrieval budgets. k=5 is the budget used everywhere else in",
+        "this write-up. k=1 is the tight budget, where precision and completeness",
+        "pull hardest against each other.",
         "",
-        "| | baseline | structured |",
-        "|---|---|---|",
-        f"| ERR-4032 row retrieved | {b['err4032_row_retrieved']} | {s['err4032_row_retrieved']} |",
-        f"| numbering prose retrieved | {b['numbering_prose_retrieved']} "
-        f"| {s['numbering_prose_retrieved']} |",
-        f"| parts answered | {b['parts_score']}/3 | {s['parts_score']}/3 |",
-        f"| refused | {b['refused']} | {s['refused']} |",
+        "## Summary",
         "",
-        "Part-by-part:",
-        "",
-        "| Part | baseline | structured |",
-        "|---|---|---|",
+        "| k | strategy | ERR-4032 row retrieved | numbering prose retrieved | parts answered | refused |",
+        "|---|---|---|---|---|---|",
     ]
-    for part in PART_EVIDENCE:
-        lines.append(
-            f"| {part} | {'yes' if b['parts_answered'][part] else 'no'} "
-            f"| {'yes' if s['parts_answered'][part] else 'no'} |"
-        )
-
-    for name, data in (("baseline", b), ("structured", s)):
-        lines += [
-            "",
-            f"## Answer - {name}",
-            "",
-            "```",
-            data["answer"],
-            "```",
-            "",
-            f"Retrieved (k=5), `has_4032` = chunk holds the ERR-4032 row, "
-            f"`has_prose` = chunk holds the numbering sentence:",
-            "",
-            "| rank | score | chunk_id | chars | has_4032 | has_prose |",
-            "|---|---|---|---|---|---|",
-        ]
-        for h in data["retrieved"]:
+    for k in result["budgets"]:
+        for strategy in STRATEGIES:
+            d = runs[f"{strategy}_k{k}"]
             lines.append(
-                f"| {h['rank']} | {h['score']:.4f} | `{h['chunk_id']}` | {h['char_len']} "
-                f"| {'yes' if h['has_err4032'] else 'no'} "
-                f"| {'yes' if h['has_numbering_prose'] else 'no'} |"
+                f"| {k} | {strategy} | {'yes' if d['err4032_row_retrieved'] else 'no'} "
+                f"| {'yes' if d['numbering_prose_retrieved'] else 'no'} "
+                f"| {d['parts_score']}/3 | {d['refused']} |"
             )
-    lines.append("")
+
+    for k in result["budgets"]:
+        lines += ["", f"## Retrieval budget k={k}", ""]
+        for strategy in STRATEGIES:
+            d = runs[f"{strategy}_k{k}"]
+            parts = ", ".join(
+                f"{p}={'yes' if v else 'no'}" for p, v in d["parts_answered"].items()
+            )
+            lines += [
+                f"### k={k} / {strategy} - {d['parts_score']}/3 parts ({parts})",
+                "",
+                "```",
+                d["answer"],
+                "```",
+                "",
+                "`has_4032` = chunk holds the ERR-4032 row. "
+                "`has_prose` = chunk holds the invoice-numbering sentence.",
+                "",
+                "| rank | score | chunk_id | chars | has_4032 | has_prose |",
+                "|---|---|---|---|---|---|",
+            ]
+            for h in d["retrieved"]:
+                lines.append(
+                    f"| {h['rank']} | {h['score']:.4f} | `{h['chunk_id']}` | {h['char_len']} "
+                    f"| {'yes' if h['has_err4032'] else 'no'} "
+                    f"| {'yes' if h['has_numbering_prose'] else 'no'} |"
+                )
+            lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -145,11 +155,13 @@ def main() -> None:
         json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8"
     )
     print()
-    for strategy, data in result["by_strategy"].items():
+    print(f"{'run':<20}{'parts':<8}{'refused':<10}{'4032':<8}{'prose':<8}")
+    print("-" * 54)
+    for name, data in result["runs"].items():
         print(
-            f"{strategy:<12} parts={data['parts_score']}/3  refused={data['refused']}  "
-            f"err4032_retrieved={data['err4032_row_retrieved']}  "
-            f"prose_retrieved={data['numbering_prose_retrieved']}"
+            f"{name:<20}{str(data['parts_score']) + '/3':<8}"
+            f"{str(data['refused']):<10}{str(data['err4032_row_retrieved']):<8}"
+            f"{str(data['numbering_prose_retrieved']):<8}"
         )
     print()
     print(f"Wrote {out / 'bonus.md'}")
