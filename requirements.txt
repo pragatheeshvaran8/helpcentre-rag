@@ -1,0 +1,19 @@
+# ============================================================
+# Help-centre RAG - chunking evaluation
+# ============================================================
+
+# --- RAG orchestration ---
+langchain-core>=0.3.0
+langchain-chroma>=0.1.4
+langchain-huggingface>=0.1.0    # local embeddings
+langchain-text-splitters>=0.3.0
+langchain-openai>=0.2.0         # OpenAI-compatible client, used for OpenRouter
+
+# --- Vector store / embeddings ---
+chromadb>=0.5.0
+sentence-transformers>=3.0.0    # backs BAAI/bge-small-en-v1.5
+
+# --- Config ---
+pydantic>=2.8.0
+pydantic-settings>=2.4.0
+python-dotenv>=1.0.1
