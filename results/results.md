@@ -167,6 +167,49 @@ keyword or BM25 arm that matches `ERR-4032` as a literal token, fused with the
 dense arm. I did not build it, because that would change retrieval and muddy the
 two-strategy comparison this task is about. It is the next change I would make.
 
+### The same fault, caught later, doing real damage
+
+Q1 only cost a rank. Poking at the index by hand afterwards found the same fault
+producing a user-visible failure.
+
+**"What does ERR-7208 mean?"** — the corpus answers this. `ERR-7208` is a row in
+the tax validation table in HC-4005: VIES was unreachable, retry after one hour,
+do not remove the customer's VAT ID.
+
+The system **refused it**.
+
+| | chunk holding ERR-7208 | in top-5? | what ranked first instead |
+|---|---|---|---|
+| structured | `HC-4005-structured-003` | **no** | `HC-4005-structured-004` — the *other half* of the same table, holding ERR-7302 and ERR-7310 |
+| baseline | `HC-4005-baseline-003` | **no** | `HC-4002-baseline-003` — the invoice error table, a different article |
+
+Neither chunker retrieved it. This is not a structure-aware regression. Both
+strategies fail the same way, which is the clearest evidence yet that the fault
+lives in the embedding model and not in the chunker.
+
+The mechanism is stark. `HC-4005-structured-003` and `HC-4005-structured-004`
+are two row-groups of *one* tax table. They share a header row, a column layout,
+and most of their vocabulary. To a dense vector they are near-duplicates. The
+query says `ERR-7208`, which appears in exactly one of them, and the model has no
+way to weight that one token heavily enough to separate them.
+
+**Two things worth saying about it.**
+
+First, it failed safely. Faced with the wrong half of the right table, the model
+refused rather than telling an agent that ERR-7208 means an expired United States
+exemption certificate. That answer would have been fluent, plausible and wrong,
+and it would have reached a customer. The forced refusal turned a retrieval bug
+into a visible gap instead of a silent lie.
+
+Second, a refusal on an answerable question is still a failure. It is a false
+negative. My 8/8 hit-rate does not see it, because ERR-7208 was never one of the
+8 questions. That is a limit of an 8-question benchmark, not a defence of it.
+
+Both this and Q1 have one fix: a keyword arm that matches `ERR-7208` as a literal
+string, fused with the dense arm. That is the first thing I would build next, and
+it would be measured against these same 8 questions plus a new set drawn from
+every error code in the corpus.
+
 ---
 
 ## 4. A defect I shipped and then found
