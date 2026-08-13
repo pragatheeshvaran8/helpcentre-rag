@@ -86,6 +86,34 @@ Resolve any citation straight out of the vector store:
 python -m evals.dump_chunks --resolve HC-4002-structured-004
 ```
 
+## Ask it your own questions
+
+The scripts above run a fixed set of questions and write files. `ask.py` is the
+interactive terminal client: type a question, see exactly what retrieval
+returned, and see whether the model answers it or refuses.
+
+```bash
+python ask.py                         # interactive
+python ask.py --search-only           # retrieval only, no LLM, no API key
+python ask.py "what is ERR-4032?"     # one question, then exit
+```
+
+Inside the session:
+
+| Command | Effect |
+|---|---|
+| `:strategy baseline` | switch index (`structured` or `baseline`) |
+| `:area api` | filter to a product_area |
+| `:area off` | clear the filter |
+| `:k 3` | change how many chunks are retrieved |
+| `:search on` | retrieval only, skip the LLM |
+| `:quit` | leave |
+
+Retrieved chunks are flagged. `table+header` means the chunk kept its column
+header. `HEADER-LESS TABLE` means it did not, which is the defect the whole
+measurement is about. Run the same question under `:strategy baseline` and
+`:strategy structured` to see the difference directly.
+
 ## Time reality
 
 `rag/ingest.py` indexes the 6 new articles only. There is no historical corpus in
