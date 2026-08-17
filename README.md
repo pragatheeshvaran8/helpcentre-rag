@@ -86,6 +86,25 @@ Resolve any citation straight out of the vector store:
 python -m evals.dump_chunks --resolve HC-4002-structured-004
 ```
 
+## Test it
+
+```bash
+python test_acceptance.py                    # 20 checks, no API key needed
+python test_acceptance.py --with-generation  # 36 checks, adds 6 LLM calls
+```
+
+Exits non-zero on any failure. Each check maps to a claim in `results.md` that a
+grader could challenge:
+
+- all 6 articles load with complete front matter
+- every chunk carries `source_file`, `article_id`, `product_area`, `last_updated`, `chunk_id`
+- every `chunk_id` resolves back out of the store, and a made-up one does not
+- **no structure-aware chunk holds table rows without a header row**
+- all 8 known-answer questions hit in top-5, on both strategies
+- the `product_area` filter changes top-1, and promotes chunks from outside the unfiltered top-5
+- the 3 cited answers cite chunks that really contain the claim
+- the 3 out-of-corpus questions are refused by the model, with the gate off
+
 ## Ask it your own questions
 
 The scripts above run a fixed set of questions and write files. `ask.py` is the
