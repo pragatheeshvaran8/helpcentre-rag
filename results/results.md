@@ -16,6 +16,40 @@ header-less table fragment is handed to the model. That went from 7 chunks to 0.
 
 ---
 
+## 0a. Relationship to the Week 3 app
+
+The task calls this an extension of an existing app. This is a separate
+repository, so that needs explaining.
+
+The existing app is an IT help-desk RAG chatbot. It has a React frontend, a
+FastAPI backend, a support-ticket agent and a LangGraph flow. None of that
+affects chunking, and all of it makes a measurement harder to isolate. Its
+default prompt is also actively hostile to this task: it instructs the model to
+answer from general knowledge when the knowledge base has nothing, which is the
+exact behaviour requirement 5 asks us to forbid.
+
+So the measurement was rebuilt as a clean rig. What matters is that the thing
+being measured is genuinely the incumbent, and it is.
+
+**The `baseline` chunker is the existing app's chunker, reproduced exactly.**
+
+| Setting | Existing app (`rag/ingest.py`, `chunk_documents`) | This repo (`rag/chunkers.py`, `chunk_baseline`) |
+|---|---|---|
+| Splitter | `RecursiveCharacterTextSplitter` | `RecursiveCharacterTextSplitter` |
+| `chunk_size` | 1000 | 1000 |
+| `chunk_overlap` | 150 | 150 |
+| `separators` | `["\n\n", "\n", ". ", "! ", "? ", "; ", ", ", " ", ""]` | identical |
+| `length_function` | `len` | `len` |
+| Embedding model | `BAAI/bge-small-en-v1.5` | `BAAI/bge-small-en-v1.5` |
+
+The only difference is `add_start_index=True`, which writes an extra metadata
+field and has no effect on where a boundary falls.
+
+So "your current one" in requirement 3 is a faithful copy of the incumbent, and
+the comparison is real rather than a strawman.
+
+---
+
 ## 0. What was held constant
 
 Changing the chunker and the embedding model in the same run teaches you nothing
