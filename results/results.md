@@ -8,6 +8,12 @@ troubleshooting table.
 chunker did not move that number. It moved a different one: how often a
 header-less table fragment is handed to the model. That went from 7 chunks to 0.
 
+> **Note on the corpus.** The 6 articles were written for this exercise. The
+> billing system, the error codes, the dates and the plan names are invented.
+> They are shaped like real help-centre articles because the exercise is about
+> chunking realistic troubleshooting tables. Nothing here documents a real
+> product.
+
 ---
 
 ## 0. What was held constant

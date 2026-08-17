@@ -4,6 +4,13 @@ Week 3 Practical, Task Set A. Ingest a 6-article help-centre drop about a billin
 migration, then measure whether the chunker can actually find the answer inside a
 troubleshooting table.
 
+> **The corpus is invented.** The 6 articles in [corpus/](corpus/) were written
+> for this exercise. There is no real "BL1", no real "BL2", and no real billing
+> migration. The error codes, cutover dates, plan names and API endpoints are all
+> made up. They are shaped like real help-centre articles on purpose, because the
+> point of the exercise is to test a chunker against realistic troubleshooting
+> tables. Do not read any of it as documentation for a real product.
+
 The deliverable is **[results/results.md](results/results.md)**. Everything else
 in this repo exists to produce it.
 
