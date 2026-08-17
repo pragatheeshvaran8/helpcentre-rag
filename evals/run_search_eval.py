@@ -23,6 +23,7 @@ from pathlib import Path
 
 from config import STRATEGIES, get_settings
 from evals.questions import QUESTIONS
+from rag import term
 from rag.retriever import chunk_answers_question, format_hits, search
 
 
@@ -248,6 +249,7 @@ def write_search_dump(report: dict, path: Path) -> None:
 
 
 def main() -> None:
+    term.init()
     settings = get_settings()
     out = Path(settings.results_dir)
     report = run()
@@ -263,22 +265,26 @@ def main() -> None:
     print(f"Search-only evaluation, k={report['k']}, same {n} questions, both strategies.")
     print(f"Embedding model held constant: {report['embedding_model']}")
     print()
-    print(f"{'Q':<5}{'type':<12}{'article':<10}{'baseline':<12}{'structured':<12}")
+    print(term.bold(f"{'Q':<5}{'type':<12}{'article':<10}{'baseline':<12}{'structured':<12}"))
     print("-" * 51)
     for q in QUESTIONS:
         b = _record(report["records"], q["id"], "baseline")
         s = _record(report["records"], q["id"], "structured")
-        bv = f"HIT@{b['hit_rank']}" if b["hit"] else "MISS"
-        sv = f"HIT@{s['hit_rank']}" if s["hit"] else "MISS"
-        print(f"{q['id']:<5}{q['type']:<12}{q['expected_article_id']:<10}{bv:<12}{sv:<12}")
+        # Pad first, then colour. ANSI codes count toward f-string width.
+        cells = []
+        for r in (b, s):
+            text = f"HIT@{r['hit_rank']}" if r["hit"] else "MISS"
+            padded = f"{text:<12}"
+            cells.append(term.green(padded) if r["hit"] else term.red(padded))
+        qtype = term.grey(f"{q['type']:<12}")
+        print(f"{q['id']:<5}{qtype}{q['expected_article_id']:<10}{cells[0]}{cells[1]}")
     print("-" * 51)
-    print(
-        f"{'':<27}{report['totals']['baseline']}/{n}"
-        f"{'':<9}{report['totals']['structured']}/{n}"
-    )
+    totals_b = term.bold(f"{report['totals']['baseline']}/{n}")
+    totals_s = term.bold(f"{report['totals']['structured']}/{n}")
+    print(f"{'':<27}{totals_b}{'':<9}{totals_s}")
     print()
     sec = report["secondary"]
-    print(f"{'metric':<34}{'baseline':<12}{'structured':<12}")
+    print(term.bold(f"{'metric':<34}{'baseline':<12}{'structured':<12}"))
     print("-" * 58)
     for label, key in (
         ("hit-in-top-5", "hit_at_5"),
@@ -287,7 +293,19 @@ def main() -> None:
         ("chunks delivered into context", "chunks_delivered"),
         ("header-less table chunks served", "context_orphan_chunks"),
     ):
-        print(f"{label:<34}{str(sec['baseline'][key]):<12}{str(sec['structured'][key]):<12}")
+        cells = []
+        for strategy in ("baseline", "structured"):
+            padded = f"{sec[strategy][key]!s:<12}"
+            if key == "context_orphan_chunks":
+                # This is the number the whole exercise moved. Make it obvious.
+                cells.append(
+                    term.green(padded)
+                    if sec[strategy][key] == 0
+                    else term.paint(padded, "red", "bold")
+                )
+            else:
+                cells.append(padded)
+        print(f"{label:<34}{cells[0]}{cells[1]}")
     print()
     print(f"Wrote {out / 'hit_matrix.md'}")
     print(f"Wrote {out / 'search_dump.md'}")

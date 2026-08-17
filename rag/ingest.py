@@ -21,6 +21,7 @@ import logging
 from langchain_core.documents import Document
 
 from config import STRATEGIES, get_settings
+from rag import term
 from rag.chunkers import CHUNKERS, table_stats
 from rag.documents import Article, load_corpus
 from rag.vector_store import count_chunks, get_store, reset_store
@@ -97,24 +98,32 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest the 6 new help-centre articles.")
     parser.parse_args()
 
+    term.init()
     stats = ingest_all()
     print()
-    print("Ingest complete. NEW ARTICLES ONLY - no historical corpus re-indexed.")
+    print(term.green("Ingest complete. NEW ARTICLES ONLY - no historical corpus re-indexed."))
     print()
     header = (
         f"{'strategy':<12}{'articles':>9}{'chunks':>8}{'stored':>8}"
         f"{'tbl-chunks':>12}{'orphan':>8}{'orphan%':>9}{'mean':>7}{'max':>6}"
     )
-    print(header)
+    print(term.bold(header))
     print("-" * len(header))
     for s in stats:
+        # Pad first, then colour. ANSI codes count toward f-string width.
+        orphan = f"{s['chunks_with_orphan_rows']:>8}"
+        rate = f"{s['orphan_rate'] * 100:>8.1f}%"
+        if s["chunks_with_orphan_rows"]:
+            orphan, rate = term.paint(orphan, "red", "bold"), term.paint(rate, "red", "bold")
+        else:
+            orphan, rate = term.green(orphan), term.green(rate)
         print(
             f"{s['strategy']:<12}{s['articles']:>9}{s['chunks']:>8}{s['stored']:>8}"
-            f"{s['chunks_with_table_rows']:>12}{s['chunks_with_orphan_rows']:>8}"
-            f"{s['orphan_rate'] * 100:>8.1f}%{s['mean_chars']:>7}{s['max_chars']:>6}"
+            f"{s['chunks_with_table_rows']:>12}{orphan}{rate}"
+            f"{s['mean_chars']:>7}{s['max_chars']:>6}"
         )
     print()
-    print("orphan = chunk holds table data rows but has lost its header row.")
+    print(term.grey("orphan = chunk holds table data rows but has lost its header row."))
 
 
 if __name__ == "__main__":

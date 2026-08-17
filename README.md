@@ -109,10 +109,38 @@ Inside the session:
 | `:search on` | retrieval only, skip the LLM |
 | `:quit` | leave |
 
-Retrieved chunks are flagged. `table+header` means the chunk kept its column
-header. `HEADER-LESS TABLE` means it did not, which is the defect the whole
-measurement is about. Run the same question under `:strategy baseline` and
-`:strategy structured` to see the difference directly.
+### Reading the output
+
+Output is colour-coded, and switches to plain text automatically when piped or
+redirected, so the generated files stay clean.
+
+| What you see | Meaning |
+|---|---|
+| `== ANSWER ==` in green | The model answered from the corpus |
+| `== REFUSED by the model ==` in red | Nothing retrieved could answer it |
+| `[HC-4002-structured-004]` in cyan | A citation inside the answer |
+| `OK resolves` | That chunk_id exists in the index |
+| `FAIL does not resolve` | A fabricated citation. Should never happen |
+| `<<< USED IN ANSWER` in green | **This is the chunk the answer came from** |
+| `[table+header]` in green | The chunk kept its table column header |
+| `[HEADER-LESS TABLE]` in red | The chunk lost its header. The defect being measured |
+
+`<<< USED IN ANSWER` is the one to look for. Retrieval returns five chunks; that
+marker tells you which of them the answer was actually built from. It is often
+not the top-ranked one.
+
+Force colour on or off with `--color` / `--no-color`, or the `NO_COLOR` and
+`FORCE_COLOR` environment variables.
+
+Run the same question under `:strategy baseline` and `:strategy structured` to
+see `HEADER-LESS TABLE` appear and disappear.
+
+### One note on re-running
+
+Some chunks score identically to four decimal places. Chroma does not guarantee
+a stable order between exact ties, so re-running can swap two adjacent results.
+Every reported number is unaffected: hit rates, MRR, and the header-less counts
+are all identical across runs.
 
 ## Time reality
 
