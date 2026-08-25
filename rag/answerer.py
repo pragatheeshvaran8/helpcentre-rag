@@ -92,19 +92,24 @@ class Answer:
 
     question: str
     strategy: str
+    mode: str
     answer: str
     refused: bool
     gate_fired: bool
     retrieved: list[dict] = field(default_factory=list)
     citations: list[Citation] = field(default_factory=list)
     context: str = ""
+    # True when the provider refused the full request on budget and the context
+    # had to be trimmed to get an answer at all. Set so a caller never presents
+    # a budget-shrunk answer as a full-context one.
+    budget_degraded: bool = False
 
     @property
     def all_citations_resolve(self) -> bool:
         return bool(self.citations) and all(c.resolves for c in self.citations)
 
 
-def _llm():
+def _llm(max_tokens: int | None = None):
     """Build the chat model. Imported lazily so search-only runs need no key."""
     from langchain_openai import ChatOpenAI
 
@@ -119,9 +124,149 @@ def _llm():
         api_key=settings.openrouter_api_key,
         base_url=settings.openrouter_base_url,
         temperature=settings.llm_temperature,
-        max_tokens=settings.max_tokens,
+        max_tokens=max_tokens or settings.max_tokens,
         timeout=120,
     )
+
+
+# Provider messages that mean "your credit balance cannot cover this request".
+# Matched on text because OpenRouter reports all of them as a single 402.
+_BUDGET_MARKERS = (
+    "requires more credits",
+    "prompt tokens limit exceeded",
+    "can only afford",
+    "insufficient credits",
+)
+
+# Bound the retry ladder. Each step either shrinks the reply or drops the
+# lowest-ranked context block, so a handful of steps covers the whole range.
+_MAX_BUDGET_ATTEMPTS = 8
+
+# Smallest reply budget that can still hold a VALID answer.
+#
+# A correct answer here is two sentences, each ending in a [chunk_id], which
+# measures 120-140 tokens. Below that the model cannot comply, and because the
+# prompt makes a partial answer a refusal, an under-budget call returns a
+# CONFIDENT REFUSAL for a question the context answers perfectly well.
+#
+# That is the worst possible output: indistinguishable from a real
+# out-of-corpus refusal, and wrong. So generation is declared unavailable below
+# this floor rather than squeezed into producing a lie. Retrieval still answers
+# the question for free.
+_MIN_VIABLE_OUTPUT_TOKENS = 160
+
+
+def _is_budget_error(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return "402" in text and any(m in text for m in _BUDGET_MARKERS)
+
+
+def _affordable_output(exc: Exception) -> int | None:
+    """The output-token ceiling the provider just told us it can cover."""
+    match = re.search(r"can only afford (\d+)", str(exc))
+    return int(match.group(1)) if match else None
+
+
+def _prompt_ceiling(exc: Exception) -> int | None:
+    """The prompt-token ceiling from 'Prompt tokens limit exceeded: X > Y'."""
+    match = re.search(r"prompt tokens limit exceeded:\s*\d+\s*>\s*(\d+)", str(exc), re.I)
+    return int(match.group(1)) if match else None
+
+
+def _invoke_within_budget(scored: list, question: str) -> tuple[str, int, bool]:
+    """Answer using as much context as the remaining credit allows.
+
+    The first attempt is the full retrieved context at the configured
+    max_tokens, so a healthy account behaves exactly as before and the graded
+    runs are unaffected.
+
+    When the provider refuses on budget, the request is made smaller rather than
+    the failure being handed to the caller. Two levers, in this order:
+
+      1. Lower the reply cap to what the provider says it can afford. The reply
+         is a couple of cited sentences, so this is usually enough.
+      2. Drop the LOWEST-ranked context block and retry. Dropping from the tail
+         keeps the best-matching chunks, which is where the answer almost always
+         is.
+
+    Returns (answer text, blocks actually used, whether it had to degrade).
+    Raises the provider error if even a single block cannot be afforded, because
+    at that point there is no answer worth returning.
+    """
+    settings = get_settings()
+    blocks = list(scored)
+    max_tokens = settings.max_tokens
+    if max_tokens < _MIN_VIABLE_OUTPUT_TOKENS:
+        # A configured cap below the floor cannot produce a compliant answer, so
+        # it would turn every answerable question into a refusal. Raise it and
+        # say so, rather than honouring a setting that can only produce wrong
+        # output. Lower MAX_TOKENS if you want cheaper calls; this floor is what
+        # the citation rules structurally require.
+        logger.warning(
+            "Configured max_tokens=%d is below the %d needed for a citable "
+            "answer; using %d instead",
+            max_tokens,
+            _MIN_VIABLE_OUTPUT_TOKENS,
+            _MIN_VIABLE_OUTPUT_TOKENS,
+        )
+        max_tokens = _MIN_VIABLE_OUTPUT_TOKENS
+    degraded = False
+    last_error: Exception | None = None
+
+    for _ in range(_MAX_BUDGET_ATTEMPTS):
+        if not blocks:
+            break
+        try:
+            response = _llm(max_tokens=max_tokens).invoke(
+                [
+                    ("system", SYSTEM_PROMPT),
+                    (
+                        "human",
+                        USER_TEMPLATE.format(
+                            context=format_context(blocks), question=question
+                        ),
+                    ),
+                ]
+            )
+            return (response.content or "").strip(), len(blocks), degraded
+        except Exception as exc:
+            if not _is_budget_error(exc):
+                raise
+            last_error = exc
+            degraded = True
+
+            affordable = _affordable_output(exc)
+            if affordable is not None and affordable < max_tokens:
+                if affordable < _MIN_VIABLE_OUTPUT_TOKENS:
+                    # Do not squeeze. See _MIN_VIABLE_OUTPUT_TOKENS: the model
+                    # would answer with a refusal it cannot justify.
+                    logger.error(
+                        "Credit allows only %d output tokens; %d are needed for a "
+                        "citable answer. Declining to generate rather than return "
+                        "an unjustified refusal.",
+                        affordable,
+                        _MIN_VIABLE_OUTPUT_TOKENS,
+                    )
+                    raise
+                # Leave a little headroom; a reply truncated mid-citation is
+                # worse than a slightly shorter one.
+                max_tokens = max(_MIN_VIABLE_OUTPUT_TOKENS, affordable - 16)
+                logger.warning(
+                    "Lowering reply cap to %d tokens to fit the remaining credit",
+                    max_tokens,
+                )
+                continue
+
+            if _prompt_ceiling(exc) is not None or len(blocks) > 1:
+                blocks = blocks[:-1]
+                logger.warning(
+                    "Prompt over budget; retrying with %d context block(s)",
+                    len(blocks),
+                )
+                continue
+            break
+
+    raise last_error if last_error else RuntimeError("Generation failed")
 
 
 def verify_citations(text: str, strategy: str, context_ids: set[str]) -> list[Citation]:
@@ -142,6 +287,38 @@ def verify_citations(text: str, strategy: str, context_ids: set[str]) -> list[Ci
     return citations
 
 
+def _gate_signal(scored: list, mode: str) -> float:
+    """The number the relevance gate should judge, per retrieval mode.
+
+    Dense mode returns a cosine relevance score, which the threshold was chosen
+    for. Hybrid mode returns an RRF score, roughly 1/60 in magnitude, which
+    would trip the gate on every single query. So in hybrid mode the gate reads
+    the dense score that RRF carried through in metadata instead.
+    """
+    if not scored:
+        return 0.0
+    if mode == "dense":
+        return max(float(s) for _, s in scored)
+    return max(float(d.metadata.get("dense_score", 0.0)) for d, _ in scored)
+
+
+def _clears_gate(scored: list, mode: str, threshold: float) -> bool:
+    """Does anything retrieved deserve to reach the model?
+
+    In hybrid mode a positive BM25 score also clears the gate. That is the point
+    of adding the keyword arm: an exact match on a rare token like ERR-7208 is
+    real evidence even when the vector arm is cold on it, and refusing there
+    would throw away the very fix being measured.
+    """
+    if not scored:
+        return False
+    if _gate_signal(scored, mode) >= threshold:
+        return True
+    if mode == "hybrid":
+        return any(float(d.metadata.get("keyword_score", 0.0)) > 0.0 for d, _ in scored)
+    return False
+
+
 def answer_question(
     question: str,
     strategy: str,
@@ -149,6 +326,7 @@ def answer_question(
     k: int | None = None,
     product_area: str | None = None,
     use_gate: bool = True,
+    mode: str | None = None,
 ) -> Answer:
     """Retrieve, then answer strictly from what was retrieved, or refuse.
 
@@ -156,23 +334,28 @@ def answer_question(
         use_gate: When True, refuse without calling the model if nothing clears
             settings.score_threshold. Set False to force the model itself to do
             the refusing, which is what the refusal transcripts demonstrate.
+        mode: "dense" or "hybrid". Defaults to settings.retrieval_mode. This is
+            the single knob Week 4 flips to produce its before-and-after.
     """
     settings = get_settings()
-    scored = search(question, strategy, k=k, product_area=product_area)
+    mode = mode or settings.retrieval_mode
+    from rag.hybrid import search_by_mode
+
+    scored = search_by_mode(question, strategy, mode=mode, k=k, product_area=product_area)
     from rag.retriever import format_hits  # local import avoids a cycle at import time
 
     retrieved = format_hits(scored)
 
-    above = [(d, s) for d, s in scored if s >= settings.score_threshold]
-    if use_gate and not above:
-        best = max((s for _, s in scored), default=0.0)
+    if use_gate and not _clears_gate(scored, mode, settings.score_threshold):
+        best = _gate_signal(scored, mode)
         return Answer(
             question=question,
             strategy=strategy,
+            mode=mode,
             answer=(
                 f"{REFUSAL_TOKEN}: The help-centre corpus does not contain this "
                 f"information.\nMissing: nothing retrieved above the "
-                f"{settings.score_threshold} relevance gate (best was {best:.4f})."
+                f"{settings.score_threshold} relevance gate (best {mode} signal was {best:.4f})."
             ),
             refused=True,
             gate_fired=True,
@@ -182,21 +365,24 @@ def answer_question(
     context = format_context(scored)
     context_ids = {h["chunk_id"] for h in retrieved}
 
-    response = _llm().invoke(
-        [
-            ("system", SYSTEM_PROMPT),
-            ("human", USER_TEMPLATE.format(context=context, question=question)),
-        ]
-    )
-    text = (response.content or "").strip()
+    text, blocks_used, degraded = _invoke_within_budget(scored, question)
+    if degraded:
+        # The context the model actually saw is what the citation check must be
+        # judged against, so narrow both to the blocks that survived.
+        scored = scored[:blocks_used]
+        retrieved = retrieved[:blocks_used]
+        context = format_context(scored)
+        context_ids = {h["chunk_id"] for h in retrieved}
 
     return Answer(
         question=question,
         strategy=strategy,
+        mode=mode,
         answer=text,
         refused=text.upper().startswith(REFUSAL_TOKEN),
         gate_fired=False,
         retrieved=retrieved,
+        budget_degraded=degraded,
         citations=verify_citations(text, strategy, context_ids),
         context=context,
     )

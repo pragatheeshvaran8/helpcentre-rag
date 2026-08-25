@@ -12,6 +12,7 @@ Inside the session:
 
     :help                 show commands
     :strategy structured  switch index (structured | baseline)
+    :mode hybrid          switch retrieval (hybrid | dense)
     :area api             filter to a product_area
     :area off             clear the filter
     :k 3                  change how many chunks are retrieved
@@ -26,7 +27,7 @@ from __future__ import annotations
 
 import argparse
 
-from config import STRATEGIES, STRATEGY_STRUCTURED, get_settings
+from config import MODES, STRATEGIES, STRATEGY_STRUCTURED, get_settings
 from rag import term
 
 PRODUCT_AREAS = ("billing_core", "invoicing", "payments", "subscriptions", "tax", "api")
@@ -37,17 +38,19 @@ PREVIEW_CHARS = 320
 class Session:
     """Mutable settings for one terminal session."""
 
-    def __init__(self, strategy: str, k: int, search_only: bool) -> None:
+    def __init__(self, strategy: str, k: int, search_only: bool, mode: str) -> None:
         self.strategy = strategy
         self.k = k
         self.search_only = search_only
+        self.mode = mode
         self.product_area: str | None = None
 
     def banner(self) -> str:
         area = self.product_area or "off"
-        mode = "search only" if self.search_only else "search + answer"
+        what = "search only" if self.search_only else "search + answer"
         return term.grey(
-            f"[index={self.strategy}  k={self.k}  area={area}  {mode}]"
+            f"[index={self.strategy}  retrieval={self.mode}  k={self.k}  "
+            f"area={area}  {what}]"
         )
 
 
@@ -79,6 +82,12 @@ def show_hits(hits: list[dict], cited: set[str] | None = None) -> None:
             tag = term.green(" [table+header]")
         else:
             tag = term.grey(" [prose]")
+
+        arm = h.get("found_by")
+        if arm == "keyword only":
+            tag += term.paint(" [BM25 ONLY]", "magenta", "bold")
+        elif arm == "dense only":
+            tag += term.grey(" [dense only]")
 
         marker = term.paint(" <<< USED IN ANSWER", "green", "bold") if used else ""
         chunk_id = (
@@ -131,6 +140,12 @@ def handle_command(raw: str, session: Session) -> bool:
             print(term.green(f"  index -> {arg}"))
         else:
             print(term.red(f"  strategy must be one of {list(STRATEGIES)}"))
+    elif cmd == ":mode":
+        if arg in MODES:
+            session.mode = arg
+            print(term.green(f"  retrieval -> {arg}"))
+        else:
+            print(term.red(f"  mode must be one of {list(MODES)}"))
     elif cmd == ":area":
         if arg in ("off", "none", ""):
             session.product_area = None
@@ -158,28 +173,68 @@ def handle_command(raw: str, session: Session) -> bool:
 # Asking
 # ---------------------------------------------------------------------------
 def ask(question: str, session: Session) -> None:
-    from rag.retriever import format_hits, search
+    from rag.hybrid import search_by_mode
+    from rag.retriever import format_hits
 
     if session.search_only:
         hits = format_hits(
-            search(question, session.strategy, k=session.k, product_area=session.product_area)
+            search_by_mode(
+                question,
+                session.strategy,
+                mode=session.mode,
+                k=session.k,
+                product_area=session.product_area,
+            )
         )
         print()
         print(term.rule(f"RETRIEVAL  top {len(hits)}", "blue"))
         show_hits(hits)
         return
 
-    from rag.answerer import answer_question
+    from rag.answerer import _is_budget_error, answer_question
 
-    result = answer_question(
-        question,
-        session.strategy,
-        k=session.k,
-        product_area=session.product_area,
-        use_gate=True,
-    )
+    try:
+        result = answer_question(
+            question,
+            session.strategy,
+            k=session.k,
+            product_area=session.product_area,
+            use_gate=True,
+            mode=session.mode,
+        )
+    except Exception as exc:
+        if not _is_budget_error(exc):
+            raise
+        # Out of credit entirely. Retrieval costs nothing and still answers the
+        # question, so show that rather than a provider stack trace. The answer
+        # is in the chunk text; the model was only going to summarise it.
+        print()
+        print(term.rule("NO GENERATION - OUT OF API CREDIT", "red"))
+        print(term.yellow("  The provider refused even a single context block."))
+        print(term.grey("  Showing retrieval only. The answer is in the text below."))
+        print(term.grey("  Use ':search on' to skip generation without the failed call."))
+        hits = format_hits(
+            search_by_mode(
+                question,
+                session.strategy,
+                mode=session.mode,
+                k=session.k,
+                product_area=session.product_area,
+            )
+        )
+        print()
+        print(term.rule(f"RETRIEVAL  top {len(hits)}", "blue"))
+        show_hits(hits)
+        return
 
     print()
+    if getattr(result, "budget_degraded", False):
+        print(
+            term.yellow(
+                f"  NOTE: low API credit. Answered on {len(result.retrieved)} "
+                f"context block(s) instead of {session.k}."
+            )
+        )
     if result.refused:
         who = "the relevance gate" if result.gate_fired else "the model"
         print(term.rule(f"REFUSED by {who}", "red"))
@@ -205,6 +260,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Ask the help-centre index a question.")
     parser.add_argument("question", nargs="*", help="Ask one question and exit.")
     parser.add_argument("--strategy", default=STRATEGY_STRUCTURED, choices=list(STRATEGIES))
+    parser.add_argument(
+        "--mode",
+        default=None,
+        choices=list(MODES),
+        help="Retrieval mode. Defaults to settings.retrieval_mode.",
+    )
     parser.add_argument("--k", type=int, default=settings.top_k)
     parser.add_argument("--area", default=None, help="Filter to a product_area.")
     parser.add_argument(
@@ -218,7 +279,9 @@ def main() -> None:
 
     term.init(False if args.no_color else (True if args.color else None))
 
-    session = Session(args.strategy, args.k, args.search_only)
+    session = Session(
+        args.strategy, args.k, args.search_only, args.mode or settings.retrieval_mode
+    )
     session.product_area = args.area
 
     print(term.grey("Loading the embedding model. About 25 seconds the first time."))

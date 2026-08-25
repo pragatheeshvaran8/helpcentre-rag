@@ -208,6 +208,141 @@ def test_generation() -> None:
         )
 
 
+
+# ---------------------------------------------------------------------------
+# Week 4
+# ---------------------------------------------------------------------------
+def test_keyword_arm() -> None:
+    """The BM25 arm must keep a code as one token, or it cannot help."""
+    from rag.keyword import build_index, search_keyword, tokenize
+    from rag.vector_store import get_chunk_by_id, get_store
+
+    tokens = tokenize("What does ERR-7208 mean?")
+    check(
+        "tokeniser keeps err-7208 as one token",
+        "err-7208" in tokens,
+        str(tokens),
+    )
+    check(
+        "tokeniser also emits the parts",
+        "err" in tokens and "7208" in tokens,
+    )
+
+    index = build_index(STRATEGY_STRUCTURED)
+    check(
+        "BM25 index covers every chunk",
+        len(index) == len(get_store(STRATEGY_STRUCTURED)._collection.get(include=[])["ids"]),
+        f"{len(index)} chunks",
+    )
+    check(
+        "a rare code has a higher IDF than a common word",
+        index.idf.get("err-7208", 0) > index.idf.get("the", 99),
+        f"err-7208={index.idf.get('err-7208', 0):.3f} the={index.idf.get('the', 0):.3f}",
+    )
+
+    top = search_keyword("ERR-7208", STRATEGY_STRUCTURED, k=1)
+    ok = bool(top) and "ERR-7208" in (get_chunk_by_id(STRATEGY_STRUCTURED, top[0][0]) or {}).get("text", "")
+    check(
+        "BM25 alone ranks the ERR-7208 chunk first",
+        ok,
+        top[0][0] if top else "nothing returned",
+    )
+
+
+def test_one_change_only() -> None:
+    """Hybrid must differ from dense in retrieval only, nothing else."""
+    from config import get_settings
+    from rag.hybrid import search_hybrid
+    from rag.retriever import search as search_dense
+
+    settings = get_settings()
+    check(
+        "both modes share one embedding model",
+        settings.embedding_model == "BAAI/bge-small-en-v1.5",
+        settings.embedding_model,
+    )
+    check(
+        "RRF constant left at the conventional value",
+        settings.rrf_k == 60,
+        f"rrf_k={settings.rrf_k}",
+    )
+    check(
+        "BM25 parameters left at standard defaults",
+        (settings.bm25_k1, settings.bm25_b) == (1.5, 0.75),
+        f"k1={settings.bm25_k1} b={settings.bm25_b}",
+    )
+
+    q = "A customer sees ERR-4032 on their invoice. What is the cause and the fix?"
+    dense_ids = {d.metadata["chunk_id"] for d, _ in search_dense(q, STRATEGY_STRUCTURED, k=20)}
+    hybrid_ids = {d.metadata["chunk_id"] for d, _ in search_hybrid(q, STRATEGY_STRUCTURED, k=5)}
+    check(
+        "hybrid draws from the same chunk universe, it does not re-chunk",
+        hybrid_ids <= dense_ids | set(build_index_ids()),
+        f"{len(hybrid_ids)} fused ids",
+    )
+
+
+def build_index_ids() -> list:
+    from rag.keyword import build_index
+
+    return build_index(STRATEGY_STRUCTURED).ids
+
+
+def test_hybrid_improves_hit_rate() -> None:
+    """The headline claim: hybrid beats dense at k=3, and breaks nothing."""
+    from evals.w4_measure import evaluate
+    from evals.w4_questions import W4_K, W4_QUESTIONS
+
+    before, after, regressions = 0, 0, []
+    for q in W4_QUESTIONS:
+        d = evaluate(q, "dense", STRATEGY_STRUCTURED)
+        h = evaluate(q, "hybrid", STRATEGY_STRUCTURED)
+        before += int(d["hit_at_k"])
+        after += int(h["hit_at_k"])
+        if d["hit_at_k"] and not h["hit_at_k"]:
+            regressions.append(q["id"])
+
+    n = len(W4_QUESTIONS)
+    check(
+        f"hybrid hit-rate@{W4_K} is at least dense",
+        after >= before,
+        f"{before}/{n} -> {after}/{n}",
+    )
+    check(
+        f"hybrid strictly improves hit-rate@{W4_K}",
+        after > before,
+        f"+{after - before}",
+    )
+    check(
+        "hybrid breaks nothing dense already found",
+        not regressions,
+        f"regressions: {regressions}" if regressions else "none",
+    )
+
+
+def test_w4_question_set() -> None:
+    """The Week 4 set must be answerable from the corpus, and unrigged."""
+    import pathlib
+
+    from evals.w4_questions import W4_QUESTIONS
+
+    corpus = " ".join(
+        p.read_text(encoding="utf-8") for p in pathlib.Path("corpus").glob("*.md")
+    ).lower()
+    missing = [
+        (q["id"], m)
+        for q in W4_QUESTIONS
+        for m in q["must_contain"]
+        if m.lower() not in corpus
+    ]
+    check("every W4 answer string is verbatim in the corpus", not missing, str(missing[:3]))
+    check(
+        "one question per code, no duplicates",
+        len({q["code"] for q in W4_QUESTIONS}) == len(W4_QUESTIONS),
+        f"{len(W4_QUESTIONS)} questions",
+    )
+
+
 # ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(description="Acceptance tests.")
@@ -229,6 +364,10 @@ def main() -> None:
         ("citation resolution", test_resolvable_citations),
         ("hit-in-top-5", test_hit_rate),
         ("product_area filter", test_metadata_filter),
+        ("w4 question set", test_w4_question_set),
+        ("w4 keyword arm", test_keyword_arm),
+        ("w4 one change only", test_one_change_only),
+        ("w4 hit-rate@3 before/after", test_hybrid_improves_hit_rate),
     ]
     if args.with_generation:
         groups.append(("generation and refusal", test_generation))

@@ -21,6 +21,11 @@ STRATEGY_BASELINE = "baseline"
 STRATEGY_STRUCTURED = "structured"
 STRATEGIES = (STRATEGY_BASELINE, STRATEGY_STRUCTURED)
 
+# Retrieval modes under test in Week 4.
+MODE_DENSE = "dense"
+MODE_HYBRID = "hybrid"
+MODES = (MODE_DENSE, MODE_HYBRID)
+
 # One Chroma collection per strategy, so both indexes are queryable at once.
 COLLECTIONS = {
     STRATEGY_BASELINE: "hc_baseline",
@@ -43,7 +48,9 @@ class Settings(BaseSettings):
     openrouter_model: str = "google/gemini-2.5-flash"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     llm_temperature: float = 0.0
-    max_tokens: int = 900
+    # Answers here are two or three cited sentences. Keeping this tight cuts
+    # cost and avoids provider ceilings on small credit balances.
+    max_tokens: int = 320
 
     # ----- Embeddings ------------------------------------------------------
     # HELD CONSTANT across both chunking strategies. Do not change this in the
@@ -66,6 +73,17 @@ class Settings(BaseSettings):
 
     # ----- Retrieval -------------------------------------------------------
     top_k: int = 5
+    # Week 4 metric. hit-rate is reported at this depth.
+    eval_k: int = 3
+    # Retrieval mode. "dense" is the Week 3 behaviour. "hybrid" fuses a BM25
+    # arm into it, and is the single change Week 4 measures.
+    retrieval_mode: str = "hybrid"
+    # Reciprocal Rank Fusion constant. 60 is the conventional value and is left
+    # alone on purpose, so the hybrid arm brings no tuned parameters with it.
+    rrf_k: int = 60
+    # BM25 parameters, at their standard defaults for the same reason.
+    bm25_k1: float = 1.5
+    bm25_b: float = 0.75
     # Used by the generation gate only. Search-only evaluation is never
     # threshold-filtered, so a miss is a real retrieval miss and not a
     # threshold artefact.

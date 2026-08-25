@@ -23,24 +23,47 @@ def main() -> None:
         action="store_true",
         help="Skip the stages that call the LLM (no API key needed).",
     )
+    parser.add_argument(
+        "--week",
+        choices=("3", "4", "all"),
+        default="all",
+        help="Which week's evaluation to run. Default: all.",
+    )
     args = parser.parse_args()
 
     from rag import ingest
-    from evals import dump_chunks, run_bonus, run_filter_demo, run_generation, run_search_eval
+    from evals import (
+        dump_chunks,
+        run_bonus,
+        run_filter_demo,
+        run_generation,
+        run_search_eval,
+        w4_failures,
+        w4_measure,
+    )
+
+    want3 = args.week in ("3", "all")
+    want4 = args.week in ("4", "all")
 
     stages: list[tuple[str, callable]] = []
     if not args.skip_ingest:
         stages.append(("ingest", ingest.main))
-    stages += [
-        ("search evaluation", run_search_eval.main),
-        ("filter demo", run_filter_demo.main),
-        ("chunk dump", dump_chunks.main),
-    ]
-    if not args.skip_generation:
+    if want3:
         stages += [
-            ("generation", run_generation.main),
-            ("bonus", run_bonus.main),
+            ("w3 search evaluation", run_search_eval.main),
+            ("w3 filter demo", run_filter_demo.main),
+            ("w3 chunk dump", dump_chunks.main),
         ]
+        if not args.skip_generation:
+            stages += [
+                ("w3 generation", run_generation.main),
+                ("w3 bonus", run_bonus.main),
+            ]
+    if want4:
+        # The headline before-and-after. Search only, so it always runs.
+        stages.append(("w4 hit-rate@3 before/after", w4_measure.main))
+        if not args.skip_generation:
+            stages.append(("w4 failure separation", w4_failures.main))
 
     import sys
 

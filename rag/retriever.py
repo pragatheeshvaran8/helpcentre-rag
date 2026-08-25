@@ -78,6 +78,17 @@ def format_hits(scored: list[ScoredDoc]) -> list[dict]:
                 "text": doc.page_content,
             }
         )
+        # Hybrid retrieval stashes per-arm diagnostics in metadata. Carry them
+        # through when present, so the write-up can say which arm found what.
+        for key in (
+            "found_by",
+            "dense_rank",
+            "keyword_rank",
+            "dense_score",
+            "keyword_score",
+        ):
+            if key in md:
+                out[-1][key] = md[key]
     return out
 
 

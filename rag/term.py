@@ -102,6 +102,10 @@ def cyan(t: str) -> str:
     return paint(t, "cyan")
 
 
+def magenta(t: str) -> str:
+    return paint(t, "magenta")
+
+
 def grey(t: str) -> str:
     return paint(t, "grey")
 
