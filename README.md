@@ -1,12 +1,16 @@
 # helpcentre-rag
 
-Weeks 3 and 4, Task Set A.
+Weeks 3, 4 and 5, Task Set A.
 
 **Week 3** ingests a 6-article help-centre drop about a billing migration and
 measures whether the chunker can find an answer inside a troubleshooting table.
 
 **Week 4** separates the two kinds of retrieval failure, then buys back
 hit-rate@3 with exactly one change.
+
+**Week 5** reads 20 real traces by hand and turns "it fails sometimes" into a
+ranked list of named problems, with one chosen to fix next and a prediction
+written before the fix.
 
 > **The corpus is invented.** The 6 articles in [corpus/](corpus/) were written
 > for this exercise. There is no real "BL1", no real "BL2", and no real billing
@@ -15,14 +19,16 @@ hit-rate@3 with exactly one change.
 > point of the exercise is to test a chunker against realistic troubleshooting
 > tables. Do not read any of it as documentation for a real product.
 
-The deliverables are **[results/results.md](results/results.md)** (Week 3) and
-**[results/w4_results.md](results/w4_results.md)** (Week 4). Everything else in
+The deliverables are **[results/results.md](results/results.md)** (Week 3),
+**[results/w4_results.md](results/w4_results.md)** (Week 4) and
+**[results/w5_results.md](results/w5_results.md)** (Week 5). Everything else in
 this repo exists to produce them.
 
 | Week | Question | Result |
 |---|---|---|
 | 3 | Does a structure-aware chunker find answers inside tables better? | hit@5 tied 8/8, but header-less chunks served fell 7 to 0 |
 | 4 | Can one change buy back hit-rate@3? | **28/30 to 30/30** by fusing BM25 into the vector search |
+| 5 | What is actually going wrong, ranked? | retrieval **15/15** and the app still wrong **6 of 20**. Every failure happened after the right chunk was on screen |
 
 ## What this measures
 
@@ -55,6 +61,25 @@ Exactly one thing changes, and it is a single flag. No reranker, no query
 rewriting, no MMR. RRF and BM25 keep their conventional constants, so no tuned
 parameter sneaks in as a second change.
 
+### Week 5: 20 traces read by hand
+
+Nothing in the app changed this week. A measurement taken while you are also
+fixing things measures nothing.
+
+| Step | What it does |
+|---|---|
+| pool | 60 questions written like real agent traffic, before any of them was run |
+| draw | `random.Random(5).sample(ids, 20)`. Uniform, not stratified, seed never changed |
+| collect | 20 complete traces: input, every setting, every retrieved chunk, the context sent, the raw answer, every citation |
+| open coding | one honest sentence per trace, written while reading, before any category existed |
+| taxonomy | 3 named groups, ranked by frequency x severity, one chosen, one prediction |
+
+The headline is a gap, not a number. **hit-rate@3 scores this sample 15 of 15
+and the app was wrong 6 times out of 20.** All 6 failures happened with the
+answering chunk already in the context: the model refused text that was on
+screen (3), answered with no citation at all (2), or printed a refusal and then
+answered underneath it (1).
+
 ## Layout
 
 ```
@@ -81,6 +106,12 @@ evals/
   w4_questions.py    the 30 week-4 questions, one per error code
   w4_measure.py      hit-rate@3 before and after the one change
   w4_failures.py     labels each failure A (wrong doc) or B (wrong answer)
+  w5_questions.py    the 60-question traffic pool, written before any trace ran
+  w5_sample.py       the seeded draw of 20, and the audit of what it picked
+  w5_trace.py        what a complete trace is, and the pass/fail rule
+  w5_collect.py      runs the 20 traces, resumable, writes them to be read
+  w5_notes.py        one hand-written sentence per trace, written before grouping
+  w5_taxonomy.py     the named groups, the ranking, the target, the prediction
   run_all.py         every stage in one process
 ask.py               interactive terminal client
 test_acceptance.py   asserts every claim the write-ups make
@@ -128,12 +159,25 @@ python -m evals.w4_measure        # hit-rate@3 before/after, no API key needed
 python -m evals.w4_failures       # label each failure A or B, needs an API key
 ```
 
+Week 5:
+
+```bash
+python -m evals.w5_sample         # show the draw and what it picked, no API key
+python -m evals.w5_collect        # collect the 20 traces, needs an API key
+python -m evals.w5_taxonomy       # rebuild the taxonomy, no API key needed
+```
+
+`w5_collect` is resumable. Every trace is appended to `results/w5_traces.jsonl`
+the moment it completes, a re-run skips what is settled and retries only what
+errored, and calls are spaced 4 seconds apart to stay under the free tier's
+20-per-minute cap.
+
 Or everything in one process, which is much faster because the embedding model
 loads once:
 
 ```bash
-python -m evals.run_all                      # weeks 3 and 4
-python -m evals.run_all --week 4             # week 4 only
+python -m evals.run_all                      # weeks 3, 4 and 5
+python -m evals.run_all --week 5             # week 5 only
 python -m evals.run_all --skip-generation    # no API key needed
 ```
 
@@ -146,9 +190,17 @@ python -m evals.dump_chunks --resolve HC-4002-structured-004
 ## Test it
 
 ```bash
-python test_acceptance.py                    # 32 checks, no API key needed
-python test_acceptance.py --with-generation  # 48 checks, adds 6 LLM calls
+python test_acceptance.py                    # 67 checks, no API key needed
+python test_acceptance.py --with-generation  # 85 checks, adds 6 LLM calls
 ```
+
+**The 67-check run is green. The generation run is not, and that is a real
+finding rather than a broken setup.** On the current free model,
+`--with-generation` fails 3 of 85 checks, all of them Q3, and all one cause: the
+model answers correctly and emits no `[chunk_id]` at all. That is the problem
+Week 5 ranked first, "answers with nothing you can check". It is intermittent:
+the same question asked through `ask.py` produced a properly cited answer. See
+[results/w5_results.md](results/w5_results.md) section 5.
 
 Exits non-zero on any failure. Each check maps to a claim in a write-up that a
 grader could challenge:
@@ -170,6 +222,22 @@ Week 4:
 - **hybrid strictly improves hit-rate@3, and breaks nothing dense already found**
 - both modes share one embedding model, and RRF and BM25 use untuned defaults
 - every Week 4 answer string is verbatim in the corpus
+
+Week 5:
+
+- the pool is 60, every required string is verbatim, and **every requirement is
+  satisfiable by a single chunk**, so no question can invent a failure
+- the draw is plain `random.sample` with seed 5, reproducible, and a different
+  seed gives a different sample
+- all 20 traces are complete, none left in the error state, none stale against
+  the current corpus hash and prompt hash
+- **every stored grade can be rebuilt from the trace alone**, which is what makes
+  a trace replayable rather than merely long
+- every trace has a hand-written note, and **no note names a group**, so the
+  notes provably came before the categories
+- every failing trace is in exactly one group, and no passing trace is in any
+- the ranking really is frequency times severity, and every predicted metric
+  says what would falsify it
 
 ## Ask it your own questions
 

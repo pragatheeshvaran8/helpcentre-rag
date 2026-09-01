@@ -25,7 +25,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--week",
-        choices=("3", "4", "all"),
+        choices=("3", "4", "5", "all"),
         default="all",
         help="Which week's evaluation to run. Default: all.",
     )
@@ -40,10 +40,13 @@ def main() -> None:
         run_search_eval,
         w4_failures,
         w4_measure,
+        w5_collect,
+        w5_taxonomy,
     )
 
     want3 = args.week in ("3", "all")
     want4 = args.week in ("4", "all")
+    want5 = args.week in ("5", "all")
 
     stages: list[tuple[str, callable]] = []
     if not args.skip_ingest:
@@ -64,6 +67,13 @@ def main() -> None:
         stages.append(("w4 hit-rate@3 before/after", w4_measure.main))
         if not args.skip_generation:
             stages.append(("w4 failure separation", w4_failures.main))
+    if want5:
+        # Collecting traces IS a generation stage; there is no trace without an
+        # answer in it. The taxonomy reads the traces already on disk, so it
+        # still runs and still rebuilds its write-up without an API key.
+        if not args.skip_generation:
+            stages.append(("w5 trace collection", w5_collect.main))
+        stages.append(("w5 taxonomy and prediction", w5_taxonomy.main))
 
     import sys
 

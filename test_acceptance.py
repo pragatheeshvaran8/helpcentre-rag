@@ -344,6 +344,280 @@ def test_w4_question_set() -> None:
 
 
 # ---------------------------------------------------------------------------
+def test_w5_pool() -> None:
+    """The Week 5 traffic pool. A broken question would invent a fake failure."""
+    from pathlib import Path
+
+    from config import STRATEGY_STRUCTURED
+    from evals.w5_questions import ANSWER, REFUSE, W5_POOL
+    from rag.retriever import chunk_answers_question
+    from rag.vector_store import get_store
+
+    ids = [q["id"] for q in W5_POOL]
+    check("w5 pool has 60 questions", len(W5_POOL) == 60, f"{len(W5_POOL)}")
+    check("w5 pool ids are unique", len(set(ids)) == len(ids))
+
+    corpus_dir = Path(get_settings().corpus_dir)
+    articles = {
+        "-".join(path.name.split("-")[:2]): path.read_text(encoding="utf-8").lower()
+        for path in corpus_dir.glob("*.md")
+    }
+    missing = [
+        (q["id"], needle)
+        for q in W5_POOL
+        for req in q["requirements"]
+        for needle in req["must_contain"]
+        if needle.lower() not in articles.get(req["article_id"], "")
+    ]
+    check(
+        "every w5 required string is verbatim in its article",
+        not missing,
+        str(missing[:3]),
+    )
+
+    data = get_store(STRATEGY_STRUCTURED).get(include=["documents", "metadatas"])
+    chunks = list(zip(data["documents"], data["metadatas"]))
+    unsatisfiable = [
+        (q["id"], req["article_id"])
+        for q in W5_POOL
+        for req in q["requirements"]
+        if not any(
+            md.get("article_id") == req["article_id"]
+            and chunk_answers_question(text, req["must_contain"])
+            for text, md in chunks
+        )
+    ]
+    check(
+        "every w5 requirement is satisfiable by one chunk",
+        not unsatisfiable,
+        str(unsatisfiable[:3]),
+    )
+
+    shapes_wrong = [
+        q["id"]
+        for q in W5_POOL
+        if (q["expected_behaviour"] == ANSWER) != bool(q["requirements"])
+    ]
+    check(
+        "answerable questions carry requirements, refusals carry none",
+        not shapes_wrong,
+        str(shapes_wrong[:3]),
+    )
+    check(
+        "only two expected behaviours exist",
+        {q["expected_behaviour"] for q in W5_POOL} == {ANSWER, REFUSE},
+    )
+
+
+# ---------------------------------------------------------------------------
+def test_w5_sample_is_not_curated() -> None:
+    """The 20 traces that were read were drawn, not chosen."""
+    import random
+
+    from evals.w5_questions import W5_POOL
+    from evals.w5_sample import W5_SAMPLE_SIZE, W5_SEED, draw_ids
+
+    first, second = draw_ids(), draw_ids()
+    check("the draw is reproducible", first == second)
+
+    expected = random.Random(W5_SEED).sample([q["id"] for q in W5_POOL], W5_SAMPLE_SIZE)
+    check("the draw is plain random.sample over the pool in file order", first == expected)
+    check("the draw is 20 distinct questions", len(set(first)) == 20, f"{len(first)}")
+    check("every drawn id is in the pool", set(first) <= {q["id"] for q in W5_POOL})
+
+    # A different seed must give a different sample. If it does not, the draw is
+    # not really random and the fairness claim is empty.
+    check("a different seed gives a different sample", draw_ids(seed=W5_SEED + 1) != first)
+
+
+# ---------------------------------------------------------------------------
+def test_w5_traces_are_complete() -> None:
+    """A trace has to be replayable and re-gradable from the record alone."""
+    import json
+    from pathlib import Path
+
+    from evals.w5_sample import draw_ids
+    from evals.w5_trace import (
+        corpus_fingerprint,
+        grade,
+        missing_fields,
+        prompt_fingerprint,
+    )
+    from rag.vector_store import get_chunk_by_id
+
+    path = Path(get_settings().results_dir) / "w5_traces.json"
+    if not path.exists():
+        check("w5 traces exist", False, "run python -m evals.w5_collect")
+        return
+    traces = json.loads(path.read_text(encoding="utf-8"))
+
+    check("20 traces were collected", len(traces) == 20, f"{len(traces)}")
+    check(
+        "the traces are the drawn sample, in draw order",
+        [t["question_id"] for t in traces] == draw_ids(),
+    )
+    check(
+        "no trace was left in the error state",
+        not [t["trace_id"] for t in traces if t["grading"]["outcome"] == "error"],
+    )
+
+    gaps = [(t["trace_id"], missing_fields(t)) for t in traces]
+    gaps = [g for g in gaps if g[1]]
+    check("every trace carries every required field", not gaps, str(gaps[:2]))
+
+    stale = [
+        t["trace_id"]
+        for t in traces
+        if t["config"]["corpus_sha"] != corpus_fingerprint()
+        or t["config"]["prompt_sha"] != prompt_fingerprint()
+    ]
+    check("no trace is stale against the current corpus and prompt", not stale, str(stale[:3]))
+
+    unresolvable = [
+        (t["trace_id"], hit["chunk_id"])
+        for t in traces
+        for hit in t["retrieval"]["hits"]
+        if get_chunk_by_id(t["config"]["strategy"], hit["chunk_id"]) is None
+    ]
+    check(
+        "every retrieved chunk_id still resolves, so a trace can be replayed",
+        not unresolvable,
+        str(unresolvable[:2]),
+    )
+
+    # Re-grade each trace from what the file holds. If the stored grade cannot be
+    # rebuilt, the trace is not self-contained however complete it looks.
+    class _Cite:
+        def __init__(self, record: dict, strategy: str) -> None:
+            resolved = get_chunk_by_id(strategy, record["chunk_id"]) or {}
+            self.chunk_id = record["chunk_id"]
+            self.resolves = record["resolves"]
+            self.article_id = record["article_id"]
+            self.text = resolved.get("text")
+
+    disagreements = []
+    for t in traces:
+        rebuilt = grade(
+            {
+                "expected_behaviour": t["expected_behaviour"],
+                "requirements": t["requirements"],
+            },
+            t["retrieval"]["hits"],
+            [_Cite(c, t["config"]["strategy"]) for c in t["citations"]],
+            t["generation"]["refused"],
+        )
+        if rebuilt["outcome"] != t["grading"]["outcome"]:
+            disagreements.append(
+                (t["trace_id"], t["grading"]["outcome"], rebuilt["outcome"])
+            )
+    check(
+        "every stored grade can be rebuilt from the trace alone",
+        not disagreements,
+        str(disagreements[:3]),
+    )
+
+
+# ---------------------------------------------------------------------------
+def test_w5_notes_came_before_the_groups() -> None:
+    """The open coding must not quote a category that did not exist yet."""
+    import json
+    from pathlib import Path
+
+    from evals.w5_notes import NOTES
+    from evals.w5_taxonomy import GROUPS
+
+    path = Path(get_settings().results_dir) / "w5_traces.json"
+    if not path.exists():
+        check("w5 traces exist", False, "run python -m evals.w5_collect")
+        return
+    trace_ids = [t["trace_id"] for t in json.loads(path.read_text(encoding="utf-8"))]
+
+    check(
+        "every trace has a hand-written note, including the ones that passed",
+        sorted(NOTES) == sorted(trace_ids),
+        f"{len(NOTES)} notes for {len(trace_ids)} traces",
+    )
+    check("no note is empty", all(note.strip() for note in NOTES.values()))
+
+    note_text = " ".join(NOTES.values()).lower()
+    leaked = [g["name"] for g in GROUPS if g["name"].lower() in note_text]
+    check(
+        "no note names a group, so the notes were not written backwards",
+        not leaked,
+        str(leaked),
+    )
+
+
+# ---------------------------------------------------------------------------
+def test_w5_taxonomy_and_prediction() -> None:
+    """The groups must agree with the traces, and the prediction must be falsifiable."""
+    from evals.w5_taxonomy import (
+        GROUPS,
+        PREDICTION,
+        SEVERITY_SCALE,
+        TARGET_KEY,
+        assigned_trace_ids,
+        consistency_problems,
+        failing_trace_ids,
+        ranking,
+        target,
+    )
+
+    problems = consistency_problems()
+    check("the taxonomy agrees with the traces", not problems, "; ".join(problems))
+
+    assigned = assigned_trace_ids()
+    check(
+        "every failing trace is in exactly one group",
+        sorted(assigned) == sorted(failing_trace_ids()),
+        f"{len(assigned)} assigned",
+    )
+    check("no group is empty", all(g["traces"] for g in GROUPS))
+    check(
+        "every severity is on the written scale",
+        all(g["severity"] in SEVERITY_SCALE for g in GROUPS),
+    )
+    check(
+        "every group name is a phrase a stranger could read",
+        all(len(g["name"].split()) >= 4 for g in GROUPS),
+        str([g["name"] for g in GROUPS if len(g["name"].split()) < 4]),
+    )
+
+    ranked = ranking()
+    scores = [g["score"] for g in ranked]
+    check(
+        "the ranking is sorted by frequency times severity",
+        scores == sorted(scores, reverse=True),
+    )
+    check(
+        "every score really is frequency times severity",
+        all(g["score"] == g["frequency"] * g["severity"] for g in ranked),
+    )
+
+    chosen = target()
+    check("exactly one target is chosen", chosen["key"] == TARGET_KEY, chosen["name"])
+    check(
+        "the target is one of the top-scoring groups",
+        chosen["score"] == ranked[0]["score"],
+        f"{chosen['score']} vs {ranked[0]['score']}",
+    )
+
+    check("the prediction names the change", bool(PREDICTION["change"].strip()))
+    check("the prediction has metrics", len(PREDICTION["metrics"]) >= 2)
+    incomplete = [
+        m["metric"]
+        for m in PREDICTION["metrics"]
+        if not (m.get("now") and m.get("predicted") and m.get("falsified_if"))
+    ]
+    check("every predicted metric says what would falsify it", not incomplete, str(incomplete))
+    check(
+        "the prediction is measured on more than the traces it came from",
+        "60" in PREDICTION["measured_on"] or "pool" in PREDICTION["measured_on"],
+    )
+    check("the prediction carries a guard against a cheap win", bool(PREDICTION["guard"].strip()))
+
+
+# ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(description="Acceptance tests.")
     parser.add_argument(
@@ -368,6 +642,11 @@ def main() -> None:
         ("w4 keyword arm", test_keyword_arm),
         ("w4 one change only", test_one_change_only),
         ("w4 hit-rate@3 before/after", test_hybrid_improves_hit_rate),
+        ("w5 traffic pool", test_w5_pool),
+        ("w5 sample is not curated", test_w5_sample_is_not_curated),
+        ("w5 traces are complete", test_w5_traces_are_complete),
+        ("w5 notes came before the groups", test_w5_notes_came_before_the_groups),
+        ("w5 taxonomy and prediction", test_w5_taxonomy_and_prediction),
     ]
     if args.with_generation:
         groups.append(("generation and refusal", test_generation))
