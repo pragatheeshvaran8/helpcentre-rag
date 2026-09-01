@@ -157,8 +157,44 @@ _MIN_VIABLE_OUTPUT_TOKENS = 160
 
 
 def _is_budget_error(exc: Exception) -> bool:
+    """A 402: the balance cannot cover this request. Shrinking it may help."""
     text = str(exc).lower()
     return "402" in text and any(m in text for m in _BUDGET_MARKERS)
+
+
+def _is_rate_limit_error(exc: Exception) -> bool:
+    """A 429: too many requests. Shrinking the request does NOT help.
+
+    Free models carry a daily request cap, separate from any credit balance.
+    Once it is spent, every call fails until the window resets, no matter how
+    small. Retrying is futile, so this must not enter the shrink-and-retry
+    ladder that the 402 path uses.
+    """
+    text = str(exc).lower()
+    return "429" in text and ("rate limit" in text or "rate-limited" in text)
+
+
+def _rate_limit_reset(exc: Exception) -> str | None:
+    """Human-readable reset time from the X-RateLimit-Reset header, if present."""
+    match = re.search(r"X-RateLimit-Reset'?\s*:\s*'?(\d{10,13})", str(exc))
+    if not match:
+        return None
+    import datetime as _dt
+
+    stamp = int(match.group(1))
+    seconds = stamp / 1000 if stamp > 10_000_000_000 else stamp
+    when = _dt.datetime.fromtimestamp(seconds, _dt.timezone.utc).astimezone()
+    hours = (seconds - _dt.datetime.now(_dt.timezone.utc).timestamp()) / 3600
+    return f"{when.strftime('%Y-%m-%d %H:%M %Z')} (about {hours:.0f}h from now)"
+
+
+def _is_generation_unavailable(exc: Exception) -> bool:
+    """The provider will not answer, for quota reasons rather than a bug.
+
+    Callers use this to degrade to retrieval-only instead of showing a stack
+    trace. It covers both a spent credit balance and a spent request quota.
+    """
+    return _is_budget_error(exc) or _is_rate_limit_error(exc)
 
 
 def _affordable_output(exc: Exception) -> int | None:
@@ -230,6 +266,11 @@ def _invoke_within_budget(scored: list, question: str) -> tuple[str, int, bool]:
             )
             return (response.content or "").strip(), len(blocks), degraded
         except Exception as exc:
+            if _is_rate_limit_error(exc):
+                # No amount of shrinking beats a request-count cap. Fail fast so
+                # the caller can degrade to retrieval instead of burning more
+                # attempts against a quota that is already spent.
+                raise
             if not _is_budget_error(exc):
                 raise
             last_error = exc

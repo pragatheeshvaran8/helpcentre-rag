@@ -26,6 +26,7 @@ produced what you are reading.
 from __future__ import annotations
 
 import argparse
+import re
 
 from config import MODES, STRATEGIES, STRATEGY_STRUCTURED, get_settings
 from rag import term
@@ -52,6 +53,61 @@ class Session:
             f"[index={self.strategy}  retrieval={self.mode}  k={self.k}  "
             f"area={area}  {what}]"
         )
+
+
+# ---------------------------------------------------------------------------
+# Input guarding
+# ---------------------------------------------------------------------------
+# Lines that are obviously this program's own output rather than a question.
+# A multi-line paste is delivered to input() one line at a time, so pasting a
+# previous result back into the prompt fires one query per line. Left
+# unguarded that floods the screen and burns an API call on every line.
+# Fragments that only ever appear in this program's own rendered output.
+_OUTPUT_MARKERS = (
+    "<<< used in answer",
+    "[table+header]",
+    "[header-less table]",
+    "[bm25 only]",
+    "[dense only]",
+    "rrf 0.0",
+    "showing retrieval only",
+    "resets at ",
+    "== retrieval",
+    "== answer",
+    "== citation check",
+    "== refused",
+    "== no generation",
+    "ok  resolves",
+    "fail  does not resolve",
+    "was not in the context",
+)
+
+# A result line: "  3. 0.7182  HC-..." or "  1. rrf 0.0328 [dense #1 ...]".
+# Written without backslash escapes on purpose; an earlier version of this
+# guard was silently broken by one that the source-level string ate.
+_RESULT_LINE = re.compile("^[ 	]*[0-9]+[.][ 	]")
+
+
+def looks_like_pasted_output(raw: str) -> bool:
+    """Is this line our own output pasted back, rather than a question?
+
+    A multi-line paste reaches input() one line at a time, so pasting a
+    previous result into the prompt fires one query per line. Unguarded, that
+    floods the screen and spends an API call on every line of it.
+    """
+    text = raw.strip()
+    if not text or text.startswith(":"):
+        return False
+    # A markdown table row or heading from a chunk preview.
+    if text.startswith("|") or text.startswith("#"):
+        return True
+    # A horizontal rule or a table separator, e.g. "|---|---|" or "=====".
+    if set(text) <= set("-=| "):
+        return True
+    if _RESULT_LINE.match(text):
+        return True
+    low = text.lower()
+    return any(marker in low for marker in _OUTPUT_MARKERS)
 
 
 # ---------------------------------------------------------------------------
@@ -94,10 +150,22 @@ def show_hits(hits: list[dict], cited: set[str] | None = None) -> None:
             term.paint(h["chunk_id"], "green", "bold") if used else term.cyan(h["chunk_id"])
         )
         rank = term.bold(f"{h['rank']}.") if used else f"{h['rank']}."
-        score = term.yellow(f"{h['score']:.4f}")
         where = term.grey(f"{h['article_id']} / {h['product_area']}")
 
-        print(f"\n  {rank} {score}  {chunk_id}  {where}{tag}{marker}")
+        # In hybrid mode the score is an RRF score, around 0.03, and on its
+        # own it tells a reader nothing. What matters is WHERE each arm put
+        # this chunk, so show the component ranks instead of a bare number.
+        if "dense_rank" in h or "keyword_rank" in h:
+            score = term.yellow(f"rrf {h['score']:.4f}")
+            arms = term.grey(
+                f"[dense #{h.get('dense_rank') or '-'}  bm25 #{h.get('keyword_rank') or '-'}]"
+            )
+            head = f"  {rank} {score} {arms}  {chunk_id}  {where}{tag}{marker}"
+        else:
+            score = term.yellow(f"{h['score']:.4f}")
+            head = f"  {rank} {score}  {chunk_id}  {where}{tag}{marker}"
+        print()
+        print(head)
 
         body = h["text"].strip()
         preview = body if len(body) <= PREVIEW_CHARS else body[:PREVIEW_CHARS] + " ..."
@@ -191,7 +259,12 @@ def ask(question: str, session: Session) -> None:
         show_hits(hits)
         return
 
-    from rag.answerer import _is_budget_error, answer_question
+    from rag.answerer import (
+        _is_generation_unavailable,
+        _is_rate_limit_error,
+        _rate_limit_reset,
+        answer_question,
+    )
 
     try:
         result = answer_question(
@@ -203,14 +276,23 @@ def ask(question: str, session: Session) -> None:
             mode=session.mode,
         )
     except Exception as exc:
-        if not _is_budget_error(exc):
+        if not _is_generation_unavailable(exc):
             raise
-        # Out of credit entirely. Retrieval costs nothing and still answers the
-        # question, so show that rather than a provider stack trace. The answer
-        # is in the chunk text; the model was only going to summarise it.
+        # The provider will not answer, for quota reasons. Retrieval costs
+        # nothing and still answers the question, so show that rather than a
+        # provider stack trace. The answer is in the chunk text; the model was
+        # only going to summarise it.
         print()
-        print(term.rule("NO GENERATION - OUT OF API CREDIT", "red"))
-        print(term.yellow("  The provider refused even a single context block."))
+        if _is_rate_limit_error(exc):
+            print(term.rule("NO GENERATION - DAILY REQUEST LIMIT REACHED", "red"))
+            print(term.yellow("  The free-model daily request quota is spent."))
+            reset = _rate_limit_reset(exc)
+            if reset:
+                print(term.yellow(f"  Resets at {reset}."))
+            print(term.grey("  Waiting is the only fix. A smaller request will not help."))
+        else:
+            print(term.rule("NO GENERATION - OUT OF API CREDIT", "red"))
+            print(term.yellow("  The provider refused even a single context block."))
         print(term.grey("  Showing retrieval only. The answer is in the text below."))
         print(term.grey("  Use ':search on' to skip generation without the failed call."))
         hits = format_hits(
@@ -307,6 +389,15 @@ def main() -> None:
             break
         if not raw:
             continue
+        if looks_like_pasted_output(raw):
+            # Almost certainly a pasted result, not a question. Skip it in
+            # silence apart from one short note, so a large accidental paste
+            # scrolls past harmlessly instead of firing a query per line.
+            skipped += 1
+            if skipped == 1:
+                print(term.grey("  (ignoring pasted output. Ctrl+C to clear the queue.)"))
+            continue
+        skipped = 0
         if raw.startswith(":"):
             if not handle_command(raw, session):
                 break
