@@ -71,6 +71,17 @@ class Settings(BaseSettings):
     # packs whole structural units and never cuts one.
     chunk_overlap: int = 150
 
+    # ----- Generation prompt ----------------------------------------------
+    # Which grounding prompt to use. "v1" is the Week 3 to Week 5 prompt and is
+    # what the Week 6 baseline was measured on. "v2" is the single Week 6
+    # change: it separates "the facts are missing" from "the question is worded
+    # in a shape the corpus does not use", and allows a refusal only for the
+    # first.
+    #
+    # Switching this changes prompt_sha, which is the one difference
+    # run_evals --compare permits between a before run and an after run.
+    prompt_version: str = "v1"
+
     # ----- Retrieval -------------------------------------------------------
     top_k: int = 5
     # Week 4 metric. hit-rate is reported at this depth.

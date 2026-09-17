@@ -1,0 +1,258 @@
+{
+  "f062a85131e3414d9aae092d": {
+    "case_id": "P02",
+    "faithful": false,
+    "relevant": true,
+    "faithful_reason": "No sources cited; claims about ERR-4032 unsupported by provided chunks.",
+    "relevant_reason": "Answer directly addresses the ERR-4032 invoice line question.",
+    "error": null
+  },
+  "d73e21c458ae47c878c5bf7b": {
+    "case_id": "P06",
+    "faithful": false,
+    "relevant": true,
+    "faithful_reason": "No sources cited; claims about ERR-4077 unsupported.",
+    "relevant_reason": "Answer addresses invoice payability and rendering error.",
+    "error": null
+  },
+  "36dbe999f71b3a1adce34050": {
+    "case_id": "P32",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source: seat removal frees license immediately but does not reduce current invoice.",
+    "relevant_reason": "Answer directly addresses whether current invoice goes down when seat removed mid-term.",
+    "error": null
+  },
+  "1dec53eb5f28bb25852909e0": {
+    "case_id": "P37",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "60-day data retention claim directly matches the cited source chunk.",
+    "relevant_reason": "Answer directly addresses the suspension data retention question asked.",
+    "error": null
+  },
+  "b263b457c5309cd945f3e62a": {
+    "case_id": "P39",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "Four attempts and 14-day suspension are directly supported by the schedule table.",
+    "relevant_reason": "Answer directly addresses the number of payment attempts before suspension.",
+    "error": null
+  },
+  "15b3be234dd56f16217fbcc9": {
+    "case_id": "P40",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source table exactly.",
+    "relevant_reason": "Answer directly addresses both parts of the question.",
+    "error": null
+  },
+  "b5caecdda0ed636aa250f128": {
+    "case_id": "P09",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source chunk exactly.",
+    "relevant_reason": "Answer directly addresses ERR-5127 next step.",
+    "error": null
+  },
+  "9559b8b29aa2f9d291ae3794": {
+    "case_id": "P14",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source chunk exactly.",
+    "relevant_reason": "Answer directly addresses ERR-6210 and agent override question.",
+    "error": null
+  },
+  "d9092e42dcdd41d00efbfc18": {
+    "case_id": "P15",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source chunk exactly.",
+    "relevant_reason": "Answer directly addresses ERR-6244 and the wait time question.",
+    "error": null
+  },
+  "f9d8ee117ed262f4b623ad33": {
+    "case_id": "P16",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source chunk exactly.",
+    "relevant_reason": "Answer directly addresses the ERR-7101 invoice impact question.",
+    "error": null
+  },
+  "d896c5a231b0697552341240": {
+    "case_id": "P26",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the cited source chunk exactly.",
+    "relevant_reason": "Answer directly addresses the Apple Pay extra prompt question.",
+    "error": null
+  },
+  "f1234bad843727fba9cdc690": {
+    "case_id": "P43",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source chunks exactly.",
+    "relevant_reason": "Answer directly addresses the refund question asked.",
+    "error": null
+  },
+  "ab3b16456bc75f70b3f3e0fa": {
+    "case_id": "P45",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "Both changes match the cited endpoint mapping table exactly.",
+    "relevant_reason": "Answer directly addresses the pay call and plan field changes asked.",
+    "error": null
+  },
+  "86ab90a0ac47408b094a551d": {
+    "case_id": "P46",
+    "faithful": false,
+    "relevant": false,
+    "faithful_reason": "ERR-4032 is not in the source chunks; only ERR-4044, ERR-4055, ERR-4061 are listed.",
+    "relevant_reason": "Answer describes ERR-4032, but source chunks do not contain that error code.",
+    "error": null
+  },
+  "eb396cce9eb630d0ce6ff5ec": {
+    "case_id": "P49",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the cited source chunk exactly.",
+    "relevant_reason": "Answer directly addresses the ERR-4010 invoice error question.",
+    "error": null
+  },
+  "d11024f4798760f33637499e": {
+    "case_id": "P04",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the ERR-4055 row in the source table.",
+    "relevant_reason": "Answer directly addresses both parts of the question.",
+    "error": null
+  },
+  "02ee6d193160543fd9ad5f92": {
+    "case_id": "P07",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source: ERR-4090 cause, fix, and no-void recommendation.",
+    "relevant_reason": "Answer directly addresses whether to void the ERR-4090 invoice.",
+    "error": null
+  },
+  "8acfec52dbfc3ce3a43305f0": {
+    "case_id": "P08",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source chunk for ERR-5101.",
+    "relevant_reason": "Answer directly addresses the ERR-5101 decline question.",
+    "error": null
+  },
+  "86c097f49b6f56d291528e3e": {
+    "case_id": "P10",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "Cause matches source chunk exactly",
+    "relevant_reason": "Answer directly addresses ERR-5133 cause",
+    "error": null
+  },
+  "d9b8a5109a57d664c8b373d0": {
+    "case_id": "P11",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the ERR-5140 row in the source chunk.",
+    "relevant_reason": "Answer directly addresses ERR-5140 and how the customer should pay.",
+    "error": null
+  },
+  "7703e654eb5c87b7e56ef5d8": {
+    "case_id": "P17",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source chunk exactly.",
+    "relevant_reason": "Answer directly addresses ERR-7215 and the required change.",
+    "error": null
+  },
+  "53c49cfa532072e7150093f2": {
+    "case_id": "P18",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "Answer matches source: ask for current US exemption certificate.",
+    "relevant_reason": "Answer directly addresses ERR-7310 for US customer.",
+    "error": null
+  },
+  "f97f82c455f087df9cf1dcc7": {
+    "case_id": "P22",
+    "faithful": false,
+    "relevant": true,
+    "faithful_reason": "Answer cites no sources; claims about global sequence, regional prefix, revision suffixes unsupported.",
+    "relevant_reason": "Answer directly addresses invoice gaps and missing invoice concern.",
+    "error": null
+  },
+  "58f75f50696455f313990cc0": {
+    "case_id": "P25",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the cited source chunk exactly.",
+    "relevant_reason": "Answer directly addresses the customer's proration charge concern.",
+    "error": null
+  },
+  "984888e24c2fdde858caa473": {
+    "case_id": "P30",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "Claim matches source: agents can issue up to 250 account credit without approval.",
+    "relevant_reason": "Answer directly addresses the question about account credit approval limits.",
+    "error": null
+  },
+  "1a1afefd06a6ba2d002295c6": {
+    "case_id": "P35",
+    "faithful": false,
+    "relevant": true,
+    "faithful_reason": "No sources cited; claims about revision suffix and numbering unsupported.",
+    "relevant_reason": "Answer directly addresses whether corrected invoice gets new number.",
+    "error": null
+  },
+  "6d1167d19cc7beb785f43c4a": {
+    "case_id": "P36",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the cited source chunk exactly.",
+    "relevant_reason": "Answer directly addresses how to get balance in v2.",
+    "error": null
+  },
+  "317bbfd600f1b4bd6cf1f727": {
+    "case_id": "P44",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "Both error codes and fixes match the cited source chunks exactly.",
+    "relevant_reason": "Answer directly addresses both ERR-7208 and ERR-7302 as asked.",
+    "error": null
+  },
+  "57d9ff20811ba51f032f99aa": {
+    "case_id": "P48",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source: ERR-5114 is insufficient funds and dunning retries automatically.",
+    "relevant_reason": "Answer directly addresses the 5114 insufficient funds retry question.",
+    "error": null
+  },
+  "19d46b151dcbf4ab0b5e01aa": {
+    "case_id": "P50",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source: 15 chars, state code first, validated against GSTN portal.",
+    "relevant_reason": "Answer directly addresses the GSTIN format for India as asked.",
+    "error": null
+  },
+  "2753b2568a264b227a944a47": {
+    "case_id": "P57",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the cited source chunks exactly.",
+    "relevant_reason": "Answer directly addresses whether the two error codes are related.",
+    "error": null
+  },
+  "1b7ce8f1a89fdb6b56d61e70": {
+    "case_id": "P42",
+    "faithful": true,
+    "relevant": true,
+    "faithful_reason": "All claims match the source table exactly.",
+    "relevant_reason": "Answer directly addresses the MIG-220 badge question.",
+    "error": null
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "n": 20,
+  "dimensions": {
+    "faithful": {
+      "n": 20,
+      "agreed": 20,
+      "agreement": 1.0,
+      "kappa": 1.0,
+      "kappa_undefined": false,
+      "human_yes": 15,
+      "judge_yes": 15,
+      "trustworthy": true
+    },
+    "relevant": {
+      "n": 20,
+      "agreed": 19,
+      "agreement": 0.95,
+      "kappa": null,
+      "kappa_undefined": true,
+      "human_yes": 20,
+      "judge_yes": 19,
+      "trustworthy": false
+    }
+  },
+  "disagreements": [
+    {
+      "case_id": "P46",
+      "dimension": "relevant",
+      "human": true,
+      "judge": false,
+      "judge_reason": "Answer describes ERR-4032, but source chunks do not contain that error code.",
+      "human_note": "AI-assisted draft, review me: cited chunk holds ERR-4044 and ERR-4055, not ERR-4032"
+    }
+  ],
+  "verdict": "do not trust"
+}

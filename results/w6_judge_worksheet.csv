@@ -1,0 +1,21 @@
+case_id,kind,faithful_human,relevant_human,note,question
+P02,code_lookup,n,y,"AI-assisted draft, review me: no source cited at all, so nothing supports the claims",Getting ERR-4032 on an invoice line. What is the fix?
+P04,code_lookup,y,y,"AI-assisted draft, review me: cited chunk holds the ERR-4055 row exactly",What does ERR-4055 mean and which invoice do I keep?
+P06,code_lookup,n,y,"AI-assisted draft, review me: content correct but no source cited","Invoice PDF will not render, code is ERR-4077. Is the invoice still payable?"
+P09,code_lookup,y,y,"AI-assisted draft, review me: cited chunk holds the ERR-5127 fix, 30 minute link",ERR-5127 on a payment. What is the next step?
+P11,code_lookup,y,y,"AI-assisted draft, review me: cited chunk holds the ERR-5140 row",Wallet payment failing with ERR-5140. How does the customer pay?
+P15,code_lookup,y,y,"AI-assisted draft, review me: cited chunk holds the ERR-6244 row",ERR-6244 on a plan change. How long do I wait?
+P16,code_lookup,y,y,"AI-assisted draft, review me: cited chunk holds the ERR-7101 row including no invoice affected",Tax ID rejected with ERR-7101. Is any invoice affected?
+P18,code_lookup,y,y,"AI-assisted draft, review me: cited chunk holds the ERR-7310 row",US customer getting ERR-7310. What do I ask them for?
+P22,symptom,n,y,"AI-assisted draft, review me: correct content, no source cited; also appends a refusal",Customer says invoice numbers have gaps and thinks an invoice is missing.
+P25,symptom,y,y,"AI-assisted draft, review me: cited chunk holds the proration by the second text",Customer says a tiny proration charge on their upgrade looks wrong.
+P26,symptom,y,y,"AI-assisted draft, review me: cited chunk holds the wallet prompt text",Customer got an extra authentication prompt paying with Apple Pay after migration. Is something wrong?
+P30,policy,y,y,"AI-assisted draft, review me: cited chunk states the 250 account currency limit",How much account credit can I issue without asking for approval?
+P32,policy,y,y,"AI-assisted draft, review me: cited chunk holds the seat reduction rule",Customer removed a seat mid-term. Does the current invoice go down?
+P35,procedure,n,y,"AI-assisted draft, review me: correct content, no source cited",I need to reissue a corrected invoice. Does it get a new invoice number?
+P45,multi_part,y,y,"AI-assisted draft, review me: both the pay call and the plan field are in the endpoint table",Their integration broke on two things: the pay call and the plan field. What changed in v2 for each?
+P46,noisy,n,y,"AI-assisted draft, review me: cited chunk holds ERR-4044 and ERR-4055, not ERR-4032",err 4032 pls
+P48,noisy,y,y,"AI-assisted draft, review me: cited chunk holds the ERR-5114 row",5114 insufficent funds? do we retry
+P49,noisy,y,y,"AI-assisted draft, review me: cited chunk holds the ERR-4010 row",invocie error 4010 addres missing
+P50,noisy,y,y,"AI-assisted draft, review me: cited chunk holds the GSTIN format row",gstin format india?
+P57,cross_article,y,y,"AI-assisted draft, review me: both codes sourced; correctly states the corpus does not link them",An invoice failed with ERR-4032 and the customer also has ERR-7203 on their VAT ID. Are the two related?

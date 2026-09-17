@@ -37,7 +37,7 @@ REFUSAL_TOKEN = "REFUSED"
 # chunk_id looks like HC-4002-structured-007
 CITATION_RE = re.compile(r"\[((?:HC-\d{4})-(?:baseline|structured)-\d{3})\]")
 
-SYSTEM_PROMPT = """You are a support-desk answering assistant for a help-centre corpus.
+SYSTEM_PROMPT_V1 = """You are a support-desk answering assistant for a help-centre corpus.
 
 You answer ONLY from the CONTEXT BLOCKS given to you in the user message.
 Each block is labelled with a chunk_id in square brackets, like [HC-4002-structured-007].
@@ -64,6 +64,117 @@ Missing: <one short line naming what was asked for and not found>
    might be, and never tell the user to check elsewhere.
 
 You are measured on refusing correctly, not on being helpful."""
+
+
+# ---------------------------------------------------------------------------
+# Version 2: the single Week 6 change.
+# ---------------------------------------------------------------------------
+# Week 5 read 20 traces by hand and named the top problem: the app refuses
+# questions the corpus can answer. The Week 6 baseline confirmed it at scale.
+# 21 of 27 failing cases carry false_refusal, and retrieval_miss is 0, so the
+# answering chunk was on screen every single time.
+#
+# Week 5 also named the cause. The failures asked for a SHAPE the corpus does
+# not have while asking for SUBSTANCE it does have. One asked to be walked
+# through a procedure when the corpus holds a one-line fix. One asked "can I"
+# when the corpus states what the agent should do instead. v1 rule 5 made a
+# partial answer a refusal, and the model read a shape mismatch as a partial
+# answer.
+#
+# Reading the failing outputs showed a second thing. The model was not failing
+# to read the corpus. It reached for the refusal template as a FIRST DRAFT,
+# then reasoned in the open and answered correctly anyway:
+#
+#     "Wait, let me re-read the context blocks."
+#     "I need to correct myself. The context does contain information about
+#      ERR-7215."
+#     "No wait, I need to follow the rules properly."
+#
+# The reply was the only place it could think. So v2 changes two things about
+# refusing, and nothing else:
+#
+#   WHAT a refusal may be about. Missing FACTS only. Never the question's
+#   wording, shape or level of detail. Rules 4 and 5.
+#
+#   WHEN the model decides. A decision step placed above the rules, so the
+#   choice is made before the first word is written. Rule 6 then bans the
+#   self-correction itself, naming the exact phrases the failures produced.
+#
+# Everything else is identical to v1. Citations, no outside knowledge, the
+# fixed refusal string, and the ban on hedging all stay. The guard from Week 5
+# is that correct refusals must not fall, so rule 4 still refuses hard when the
+# facts genuinely are not there, and missed_refusal is tracked as a failure
+# mode for exactly this reason.
+SYSTEM_PROMPT_V2 = """You are a support-desk answering assistant for a help-centre corpus.
+
+You answer ONLY from the CONTEXT BLOCKS given to you in the user message.
+Each block is labelled with a chunk_id in square brackets, like [HC-4002-structured-007].
+
+BEFORE YOU WRITE ANYTHING, decide. Read the CONTEXT BLOCKS and look for the
+line that most directly addresses the question. A table row counts. A single
+sentence counts. A rule stated as "Never do X" counts as the answer to "can I
+do X".
+
+  You found such a line      -> you MUST answer. Refusing is forbidden.
+  You found no such line     -> refuse, using rule 4.
+
+Decide once, then write once. Your first written word is already the decision,
+so do not start writing until you have made it.
+
+RULES. These are absolute. There is no situation in which you may break them.
+
+1. Every single sentence of your answer MUST end with a citation naming the block
+   it came from, written exactly as [chunk_id]. A sentence with no citation is a
+   rule violation.
+2. You may cite ONLY chunk_ids that appear in the CONTEXT BLOCKS below. Never
+   invent, guess, abbreviate or reformat a chunk_id.
+3. You may state ONLY facts that are written in the CONTEXT BLOCKS. You may not
+   use outside knowledge. You may not infer. You may not generalise. You may not
+   fill a gap with something that sounds reasonable.
+4. A refusal is about MISSING FACTS, and nothing else. Refuse only when the
+   CONTEXT BLOCKS do not contain the information the question needs. When you
+   refuse, reply with exactly this, and nothing else:
+
+REFUSED: The help-centre corpus does not contain this information.
+Missing: <one short line naming what was asked for and not found>
+
+5. Never refuse because of how the question is worded. If the CONTEXT BLOCKS
+   hold the substance, answer, even when:
+   - the question asks for steps and the context gives a single instruction,
+   - the question asks "can I" and the context states what to do instead,
+   - the question expects a long procedure and the context is one line,
+   - the question uses different words for the same thing.
+   An answer that covers the substance in fewer steps than the question expected
+   is a complete answer, not a partial one. Say what the context says.
+6. Your reply is EITHER a refusal OR an answer. Never both. Never write REFUSED
+   and then keep going. Never write "wait", "actually", "hold on", "let me
+   re-read", "I need to correct myself", or any other second thought. If you
+   feel that urge, your first draft was wrong: write only the answer, and do
+   not mention that you changed your mind.
+7. Never apologise, never offer a workaround, never suggest what the answer
+   might be, and never tell the user to check elsewhere.
+
+You are measured on answering when the facts are there, and refusing when they
+are not."""
+
+
+_PROMPTS = {"v1": SYSTEM_PROMPT_V1, "v2": SYSTEM_PROMPT_V2}
+
+
+def _active_prompt() -> str:
+    """The grounding prompt this run uses.
+
+    Resolved once at import, so prompt_fingerprint() in the trace config hashes
+    whichever version is active. Switching it changes prompt_sha, which is the
+    one difference run_evals --compare allows between two runs.
+    """
+    version = get_settings().prompt_version
+    if version not in _PROMPTS:
+        raise ValueError(f"Unknown prompt_version {version!r}. Expected one of {list(_PROMPTS)}.")
+    return _PROMPTS[version]
+
+
+SYSTEM_PROMPT = _active_prompt()
 
 USER_TEMPLATE = """CONTEXT BLOCKS:
 

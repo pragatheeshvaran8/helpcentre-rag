@@ -1,0 +1,2463 @@
+{
+  "tag": "after",
+  "judge_prompt_version": null,
+  "used_judge": false,
+  "config": {
+    "strategy": "structured",
+    "collection": "hc_structured",
+    "retrieval_mode": "hybrid",
+    "k": 3,
+    "product_area_filter": null,
+    "score_threshold": 0.3,
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "distance_metric": "cosine",
+    "chunk_size": 1000,
+    "chunk_overlap": 150,
+    "chunk_count": 34,
+    "rrf_k": 60,
+    "bm25_k1": 1.5,
+    "bm25_b": 0.75,
+    "llm_model": "poolside/laguna-s-2.1:free",
+    "llm_temperature": 0.0,
+    "llm_max_tokens": 320,
+    "prompt_sha": "4a4b6fc6a1a4e1af",
+    "corpus_sha": "b5eed06a26dba4e3"
+  },
+  "elapsed_s": 110.5,
+  "summary": {
+    "cases": 43,
+    "passed": 34,
+    "pass_rate": 0.7907,
+    "mean_assertion_score": 0.9333,
+    "by_kind": {
+      "code_lookup": {
+        "n": 16,
+        "passed": 13,
+        "pass_rate": 0.8125
+      },
+      "cross_article": {
+        "n": 3,
+        "passed": 2,
+        "pass_rate": 0.6667
+      },
+      "multi_part": {
+        "n": 3,
+        "passed": 1,
+        "pass_rate": 0.3333
+      },
+      "noisy": {
+        "n": 1,
+        "passed": 1,
+        "pass_rate": 1.0
+      },
+      "out_of_corpus": {
+        "n": 2,
+        "passed": 2,
+        "pass_rate": 1.0
+      },
+      "policy": {
+        "n": 6,
+        "passed": 6,
+        "pass_rate": 1.0
+      },
+      "procedure": {
+        "n": 4,
+        "passed": 4,
+        "pass_rate": 1.0
+      },
+      "symptom": {
+        "n": 7,
+        "passed": 4,
+        "pass_rate": 0.5714
+      },
+      "vague": {
+        "n": 1,
+        "passed": 1,
+        "pass_rate": 1.0
+      }
+    },
+    "failure_modes": {
+      "retrieval_miss": 0,
+      "false_refusal": 2,
+      "unchecked_answer": 3,
+      "fabricated_citation": 0,
+      "wrong_source": 4,
+      "refusal_then_answer": 4,
+      "missed_refusal": 0
+    },
+    "failing_case_ids": [
+      "P05",
+      "P06",
+      "P13",
+      "P19",
+      "P20",
+      "P25",
+      "P41",
+      "P43",
+      "P56"
+    ],
+    "attempted": 60,
+    "not_run": 17,
+    "complete": false,
+    "not_run_ids": [
+      "P07",
+      "P14",
+      "P24",
+      "P33",
+      "P34",
+      "P36",
+      "P40",
+      "P42",
+      "P44",
+      "P46",
+      "P48",
+      "P49",
+      "P50",
+      "P52",
+      "P53",
+      "P54",
+      "P58"
+    ],
+    "regressions": {
+      "total": 4,
+      "held": 4,
+      "recurred": [],
+      "new_break": []
+    }
+  },
+  "rows": [
+    {
+      "case_id": "P01",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "For ERR-4010, open Billing then Customer Details, complete the address (most often a missing postal code), then click Revalidate; the invoice finalises on the next hourly run [HC-4002-structured-004].",
+      "cited_sources": "[HC-4002-structured-004]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4010 | The invoice references a customer address that failed validation during import. Most often a missing postal code. | Open Billing then Customer Details, complete the address, then click Revalidate. The invoice finalises on the next hourly run. |\n| ERR-4021 | Two line items on the same invoice resolve to the same metered usage record. This happens on accounts that had overlapping legacy subscriptions. | Void the invoice, then run Rebuild Usage for the period. Never delete the usage record directly. |\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P02",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": true,
+      "regression_trace": "T11",
+      "banned_mode": "false_refusal",
+      "regression_verdict": "held",
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "The fix for ERR-4032 is to re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. [HC-4002-structured-004]",
+      "cited_sources": "[HC-4002-structured-004]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4010 | The invoice references a customer address that failed validation during import. Most often a missing postal code. | Open Billing then Customer Details, complete the address, then click Revalidate. The invoice finalises on the next hourly run. |\n| ERR-4021 | Two line items on the same invoice resolve to the same metered usage record. This happens on accounts that had overlapping legacy subscriptions. | Void the invoice, then run Rebuild Usage for the period. Never delete the usage record directly. |\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P03",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "Convert the remainder to account credit using Apply as Credit and do not issue a refund for the difference, as the invoice total is negative because an imported credit note exceeded the invoice value. [HC-4002-structured-005]",
+      "cited_sources": "[HC-4002-structured-005]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4044 | The invoice total is negative because an imported credit note exceeded the invoice value. | Convert the remainder to account credit using Apply as Credit. Do not issue a refund for the difference. |\n| ERR-4055 | The billing period on the invoice overlaps a period that is already invoiced and paid. | Void the newer invoice. The paid invoice is the correct one. Confirm the customer has not been charged twice before closing the ticket. |\n| ERR-4061 | The invoice currency does not match the account currency. Caused by a mid-cycle currency change in the legacy system. | Escalate to Billing Ops. Agents cannot change invoice currency, and editing the account currency will not fix the existing invoice. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P04",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "ERR-4055 means the billing period on the invoice overlaps a period that is already invoiced and paid. You should void the newer invoice and keep the paid invoice, which is the correct one. Before closing the ticket, confirm the customer has not been charged twice. [HC-4002-structured-005]",
+      "cited_sources": "[HC-4002-structured-005]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4044 | The invoice total is negative because an imported credit note exceeded the invoice value. | Convert the remainder to account credit using Apply as Credit. Do not issue a refund for the difference. |\n| ERR-4055 | The billing period on the invoice overlaps a period that is already invoiced and paid. | Void the newer invoice. The paid invoice is the correct one. Confirm the customer has not been charged twice before closing the ticket. |\n| ERR-4061 | The invoice currency does not match the account currency. Caused by a mid-cycle currency change in the legacy system. | Escalate to Billing Ops. Agents cannot change invoice currency, and editing the account currency will not fix the existing invoice. |",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P05",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": false,
+      "assertion_score": 0.8333,
+      "failure_modes": [
+        "wrong_source"
+      ],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": false,
+          "detail": "cited chunk does not contain the required text",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, you cannot fix ERR-4061 yourself. The cause is a mid-cycle currency change in the legacy system, and the fix is to escalate to Billing Ops because agents cannot change invoice currency, and editing the account currency will not fix the existing invoice. [HC-4002-structured-004]",
+      "cited_sources": "[HC-4002-structured-004]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4010 | The invoice references a customer address that failed validation during import. Most often a missing postal code. | Open Billing then Customer Details, complete the address, then click Revalidate. The invoice finalises on the next hourly run. |\n| ERR-4021 | Two line items on the same invoice resolve to the same metered usage record. This happens on accounts that had overlapping legacy subscriptions. | Void the invoice, then run Rebuild Usage for the period. Never delete the usage record directly. |\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P06",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": false,
+      "assertion_score": 0.6,
+      "failure_modes": [
+        "unchecked_answer",
+        "wrong_source"
+      ],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": false,
+          "detail": "no resolvable [chunk_id] in the answer",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": false
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": false,
+          "detail": "cited chunk does not contain the required text",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "ERR-4077 means the PDF rendering failed because a line item description contains an unsupported control character, and the fix is to edit the line item description to remove the character and then click Regenerate PDF. The invoice itself is valid and payable meanwhile.",
+      "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P08",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "Tell the customer to contact their bank, and do not retry the payment more than once because repeated attempts can trigger a fraud block. [HC-4003-structured-004]",
+      "cited_sources": "[HC-4003-structured-004]\n## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P09",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "Send the customer a fresh payment link from the invoice, because the 3-D Secure authentication session expired before completion. [HC-4003-structured-004]",
+      "cited_sources": "[HC-4003-structured-004]\n## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P10",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "ERR-5133 is caused by the card being valid but the billing country on the card not matching the account tax country.\n\n[HC-4003-structured-005]",
+      "cited_sources": "[HC-4003-structured-005]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5133 | The card is valid but the billing country on the card does not match the account tax country. | Correct the account tax country, or ask the customer to use a card issued in the account country. |\n| ERR-5140 | The payment method is a wallet token bound to a device that is no longer registered. | Ask the customer to pay once from the original device, or to add a normal card. |\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P11",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "For ERR-5140, the customer should pay once from the original device, or add a normal card. [HC-4003-structured-005]",
+      "cited_sources": "[HC-4003-structured-005]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5133 | The card is valid but the billing country on the card does not match the account tax country. | Correct the account tax country, or ask the customer to use a card issued in the account country. |\n| ERR-5140 | The payment method is a wallet token bound to a device that is no longer registered. | Ask the customer to pay once from the original device, or to add a normal card. |\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P12",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, you should not keep retrying. The context states that for ERR-5199, the processor rejected the request because the account is flagged for manual review, and the fix is to not retry and escalate to Payments Ops, because retrying while flagged extends the review window.\n\n[HC-4003-structured-005]",
+      "cited_sources": "[HC-4003-structured-005]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5133 | The card is valid but the billing country on the card does not match the account tax country. | Correct the account tax country, or ask the customer to use a card issued in the account country. |\n| ERR-5140 | The payment method is a wallet token bound to a device that is no longer registered. | Ask the customer to pay once from the original device, or to add a normal card. |\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P13",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": false,
+      "assertion_score": 0.3333,
+      "failure_modes": [
+        "refusal_then_answer",
+        "false_refusal"
+      ],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": false,
+          "detail": "refusal text carries an answer",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": false,
+          "detail": "refused an answerable question",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": false
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": false
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": false
+        }
+      ],
+      "judge": null,
+      "refused": true,
+      "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: The fix for ERR-6203.\n\nWait, let me re-read the context blocks.\n\nThe fix for ERR-6203 is: \"Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued.\" [HC-4004-structured-005]",
+      "cited_sources": "[HC-4004-structured-005]\n## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P15",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "ERR-6244 occurs when a plan change is attempted while an invoice for the current period is still in draft, and the fix is to wait for the hourly finalisation run before retrying the change, so you wait up to one hour. [HC-4004-structured-005]",
+      "cited_sources": "[HC-4004-structured-005]\n## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P16",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No invoice is affected. The ERR-7101 error means the tax ID format is wrong for the selected country, and the field rejects the value on save, so no invoice is affected yet. Correct the format on the Tax tab. [HC-4005-structured-003]",
+      "cited_sources": "[HC-4005-structured-003]\n## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P17",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": true,
+      "regression_trace": "T02",
+      "banned_mode": "refusal_then_answer",
+      "regression_verdict": "held",
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "For ERR-7215, the customer name on the account does not match the name registered against the VAT ID, so you must update the legal entity name on the account to match the registration exactly, then revalidate. [HC-4005-structured-003]",
+      "cited_sources": "[HC-4005-structured-003]\n## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P18",
+      "kind": "code_lookup",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "Ask the customer to upload a current United States exemption certificate, since the existing one has expired. [HC-4005-structured-004]",
+      "cited_sources": "[HC-4005-structured-004]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7302 | An invoice line item has no tax code and no default could be inferred from the product. | Set a tax code on the product, then rebuild the invoice. Escalate to Tax Ops if the product has no correct code. |\n| ERR-7310 | A United States exemption certificate has expired. | Ask the customer to upload a current certificate. Tax is charged in the meantime and is not refundable once remitted. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P19",
+      "kind": "symptom",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": false,
+      "assertion_score": 0.6667,
+      "failure_modes": [
+        "false_refusal"
+      ],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": false,
+          "detail": "refused an answerable question",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": false,
+          "detail": "no resolvable [chunk_id] in the answer",
+          "applicable": false
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": false
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": false,
+          "detail": "cited chunk does not contain the required text",
+          "applicable": false
+        }
+      ],
+      "judge": null,
+      "refused": true,
+      "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: The Phase 3 cutover freeze window dates/times needed to confirm whether 1 June at 03:12 UTC falls inside the four-hour read-only billing ledger window.",
+      "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P20",
+      "kind": "symptom",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": false,
+      "assertion_score": 0.8333,
+      "failure_modes": [
+        "refusal_then_answer"
+      ],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": false,
+          "detail": "refusal text carries an answer",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "The card was dropped during the cutover because it had not been used for more than 24 months, and the processor will not re-tokenise a dormant card. Customers whose card had already expired were also dropped for the same reason. In both cases the account shows no default payment method, and renewal will fail silently until a card is added.\n\nREFUSED: The help-centre corpus does not contain this information.\nMissing: The specific reason why the card was dropped during cutover.\n\nWait, let me re-read the context blocks to find the answer.\n\nThe card was dropped during the cutover because it had not been used for more than 24 months, and the processor will not re-tokenise a dormant card. Customers whose card had already expired were also dropped for the same reason. In both cases the account shows no default payment method, and renewal will fail silently until a card is added. [HC-4003-structured-001]\n\nThe card was dropped during the cutover because it had not been used for more than 24 months, and the processor will not re-tokenise a dormant card. Customers whose card had already expired were also dropped for the same reason. In both cases the account shows no default payment method, and renewal will fail silently until a card is added. [HC-4003-structured-001]",
+      "cited_sources": "[HC-4003-structured-001]\n# Payment Methods, Card Tokens and Decline Codes\n\n## What happened to stored cards\n\nEvery stored card was re-tokenised during cutover. The card number itself never\nmoved, because we never held it. What moved was the token issued by the payment\nprocessor. Customers do not need to do anything if their card was re-tokenised\nsuccessfully, and most were.\n\nTwo groups of cards were not migrated. Cards that had not been used for more than\n24 months were dropped, because the processor will not re-tokenise a dormant card.\nThose customers must add a payment method again before their next renewal.\nCustomers whose card had already expired were also dropped, for the same reason.\nIn both cases the account shows no default payment method, and renewal will fail\nsilently until a card is added.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P21",
+      "kind": "symptom",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "The most common reason webhooks stop working after migration is that every event was moved to a `billing.` namespace, and old event names are no longer sent at all, so an endpoint listening for the old name goes quiet rather than erroring.\n\nThe customer should update their webhook endpoint to listen for the new `billing.`-prefixed event names instead of the old v1 names.\n\nFor example, `invoice.created` is now `billing.invoice.created`, `invoice.payment_succeeded` is now `billing.invoice.paid`, and `subscription.updated` is now `billing.subscription.updated`.\n\nOne special case: `customer.balance_changed` has been removed entirely with no replacement, and should be derived from `billing.ledger.entry_created` instead.\n\n[HC-4006-structured-004]",
+      "cited_sources": "[HC-4006-structured-004]\n## Webhook event renames\n\nEvery event moved to a `billing.` namespace. Old event names are no longer sent at\nall, so an endpoint listening for the old name goes quiet rather than erroring.\nThis is the single most common reason a customer reports \"webhooks stopped\nworking\" after migration.\n\n| v1 event name | v2 event name | Note |\n|---|---|---|\n| `invoice.created` | `billing.invoice.created` | Payload unchanged except for the `number` field. |\n| `invoice.payment_succeeded` | `billing.invoice.paid` | Renamed and reworded. Fires once, after ledger settlement, not on processor approval. |\n| `invoice.payment_failed` | `billing.invoice.payment_failed` | Now includes the dunning `attempt` number. |\n| `subscription.updated` | `billing.subscription.updated` | Fires for seat changes too, which v1 did not. |\n| `customer.balance_changed` | removed | No replacement. Derive from `billing.ledger.entry_created`. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P22",
+      "kind": "symptom",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "The gaps in invoice numbers are expected and do not indicate a missing invoice, because BL2 now issues invoice numbers from a single global sequence with a regional prefix rather than a sequential per-account sequence.\n\n[HC-4002-structured-001]",
+      "cited_sources": "[HC-4002-structured-001]\n# Invoice Errors After the Billing Migration\n\n## How invoice numbering works now\n\nInvoice numbers are no longer sequential per account. BL2 issues numbers from a\nsingle global sequence with a regional prefix, for example `EU-2026-0004417`.\nCustomers who reconcile by number will see gaps in their own sequence. That is\nexpected and is not a sign of a missing invoice.\n\nWhen an invoice is corrected, BL2 does not allocate a new number. A reissued\ninvoice keeps the original invoice number and gains a revision suffix, such as\n`EU-2026-0004417-R2`. The revision suffix increments on every reissue. Accounting\nteams should treat the highest revision as the valid document and should ignore\nlower revisions. Credit notes are separate documents with their own `CN-` prefix\nand are never revisions of an invoice.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P23",
+      "kind": "symptom",
+      "expected": "answer",
+      "is_regression": true,
+      "regression_trace": "T04",
+      "banned_mode": "unchecked_answer",
+      "regression_verdict": "held",
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, payment is not due yet. A draft invoice has no number at all until it is finalised, so an empty invoice number field means the invoice is still a draft. [HC-4002-structured-002]",
+      "cited_sources": "[HC-4002-structured-002]\nDraft invoices behave differently from the legacy system. A draft has no number at\nall until it is finalised. If a customer sends a screenshot with an empty invoice\nnumber field, the invoice is still a draft and no payment is due yet.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P25",
+      "kind": "symptom",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": false,
+      "assertion_score": 0.6,
+      "failure_modes": [
+        "unchecked_answer",
+        "wrong_source"
+      ],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": false,
+          "detail": "no resolvable [chunk_id] in the answer",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": false
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": false,
+          "detail": "cited chunk does not contain the required text",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "Proration is now calculated by the second rather than by the day, so an upgrade made at 14:30 is charged from 14:30 instead of from midnight, which is why the small proration amount looks unfamiliar. These small amounts are not errors.",
+      "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P26",
+      "kind": "symptom",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, something is not wrong. Wallet payment methods behave differently, and Apple Pay tokens are device-bound and were re-issued automatically on first use. A customer using a wallet may see one extra authentication prompt after migration, and that prompt is expected and appears once per device. [HC-4003-structured-002]",
+      "cited_sources": "[HC-4003-structured-002]\nWallet payment methods behave differently. Apple Pay and Google Pay tokens are\ndevice-bound and were re-issued automatically on first use. A customer using a\nwallet may see one extra authentication prompt after migration. That prompt is\nexpected and appears once per device.",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P27",
+      "kind": "policy",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, you must not void an invoice that a customer has already paid, even if it shows an error code. The correct route is always a Billing Ops ticket. [HC-4002-structured-007]",
+      "cited_sources": "[HC-4002-structured-007]\n## What agents must not do\n\nNever void an invoice that a customer has already paid, even if it shows an error\ncode. Voiding a paid invoice creates an orphaned payment that has to be repaired\nby hand in the ledger. If the invoice is paid and shows an error, the correct\nroute is always a Billing Ops ticket.\n\nNever edit tax codes on a historical invoice to \"make the total match\". The tax\ncode drives the ledger entry, and changing it after payment causes the account to\ndrift out of reconciliation.",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P28",
+      "kind": "policy",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, you must never mark an account as tax exempt to clear a tax error. Exemption is a legal status that is set only by Tax Ops after reviewing a certificate. To resolve a tax validation error, use the specific fix listed for the error code, such as correcting the format on the Tax tab, asking the customer to confirm the VAT ID, retrying after an outage, or updating the legal entity name to match the registration.\n\n[HC-4005-structured-005][HC-4005-structured-003]",
+      "cited_sources": "[HC-4005-structured-005]\n## What agents must not do\n\nNever mark an account as tax exempt to clear an error. Exemption is a legal status\nand is set only by Tax Ops after reviewing a certificate. Never edit a tax code on\na finalised invoice. Corrections are made by reissuing the invoice, which keeps the\noriginal invoice number and adds a revision suffix.\n\n---\n\n[HC-4005-structured-003]\n## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P29",
+      "kind": "policy",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, a customer who downgrades mid-term does not receive a credit note. Downgrades take effect at the next renewal, and the customer keeps the higher tier until then, with no credit issued. This differs from the legacy system, which issued a partial credit note on downgrade. [HC-4004-structured-003]",
+      "cited_sources": "[HC-4004-structured-003]\n## Proration\n\nProration is now calculated by the second rather than by the day. An upgrade made\nat 14:30 is charged from 14:30, not from midnight. This makes small proration\namounts look unfamiliar, and customers occasionally report them as errors. They\nare not errors.\n\nDowngrades never prorate. A downgrade takes effect at the next renewal and the\ncustomer keeps the higher tier until then. The legacy system issued a partial\ncredit note on downgrade. BL2 does not, and no credit is due.\n\nSeat reductions follow the downgrade rule. Removing a seat mid-term frees the\nlicence immediately but does not reduce the current invoice.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P30",
+      "kind": "policy",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "Agents can issue account credit up to 250 in account currency without approval. [HC-4003-structured-006]",
+      "cited_sources": "[HC-4003-structured-006]\n## Refunds\n\nRefunds are issued back to the original payment method whenever the original token\nstill resolves. If the token was dropped during migration, the refund cannot be\nreturned to the card and must be issued as account credit instead. Agents can\nissue account credit up to 250 in account currency without approval.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P31",
+      "kind": "policy",
+      "expected": "answer",
+      "is_regression": true,
+      "regression_trace": "T19",
+      "banned_mode": "false_refusal",
+      "regression_verdict": "held",
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, you cannot give a customer an extension on the v1 API sunset. The v1 endpoints stop responding on 30 September 2026, and there is no extension process. Customers who ask for one should be routed to their account manager rather than told no by an agent. [HC-4006-structured-001]",
+      "cited_sources": "[HC-4006-structured-001]\n# Billing API and Webhook Changes\n\n## Versioning and sunset\n\nThe billing API moved from v1 to v2 at cutover. Both versions answer today. The v1\nendpoints stop responding on 30 September 2026. After that date a v1 request\nreturns HTTP 410 with no body. There is no extension process, and customers who\nask for one should be routed to their account manager rather than told no by an\nagent.\n\nThe v2 API is not a superset of v1. Three v1 endpoints have no v2 equivalent at\nall, because the underlying concept no longer exists. Those are listed below as\n\"removed\". Customers relying on them need a code change, not a URL change.\n\nAuthentication did not change. The same API keys work against both versions. Keys\nissued before migration were not rotated.",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P32",
+      "kind": "policy",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, the current invoice does not go down when a seat is removed mid-term. Seat reductions follow the downgrade rule, which means removing a seat frees the licence immediately but does not reduce the current invoice. [HC-4004-structured-003]",
+      "cited_sources": "[HC-4004-structured-003]\n## Proration\n\nProration is now calculated by the second rather than by the day. An upgrade made\nat 14:30 is charged from 14:30, not from midnight. This makes small proration\namounts look unfamiliar, and customers occasionally report them as errors. They\nare not errors.\n\nDowngrades never prorate. A downgrade takes effect at the next renewal and the\ncustomer keeps the higher tier until then. The legacy system issued a partial\ncredit note on downgrade. BL2 does not, and no credit is due.\n\nSeat reductions follow the downgrade rule. Removing a seat mid-term frees the\nlicence immediately but does not reduce the current invoice.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P35",
+      "kind": "procedure",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, a corrected invoice does not get a new invoice number. When an invoice is corrected, BL2 does not allocate a new number; a reissued invoice keeps the original invoice number and gains a revision suffix, such as `EU-2026-0004417-R2`, and the revision suffix increments on every reissue. [HC-4002-structured-001]",
+      "cited_sources": "[HC-4002-structured-001]\n# Invoice Errors After the Billing Migration\n\n## How invoice numbering works now\n\nInvoice numbers are no longer sequential per account. BL2 issues numbers from a\nsingle global sequence with a regional prefix, for example `EU-2026-0004417`.\nCustomers who reconcile by number will see gaps in their own sequence. That is\nexpected and is not a sign of a missing invoice.\n\nWhen an invoice is corrected, BL2 does not allocate a new number. A reissued\ninvoice keeps the original invoice number and gains a revision suffix, such as\n`EU-2026-0004417-R2`. The revision suffix increments on every reissue. Accounting\nteams should treat the highest revision as the valid document and should ignore\nlower revisions. Credit notes are separate documents with their own `CN-` prefix\nand are never revisions of an invoice.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P37",
+      "kind": "procedure",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "A suspended subscription keeps customer data for 60 days, after which the data is deleted and cannot be restored, even if the customer pays. [HC-4004-structured-004]",
+      "cited_sources": "[HC-4004-structured-004]\n## Renewal failures\n\nA renewal that cannot be charged does not cancel the subscription. It moves the\nsubscription through the dunning schedule described in the payments article, then\nsuspends it. A suspended subscription keeps customer data for 60 days. After 60\ndays the data is deleted and cannot be restored, even if the customer pays.\n\nRenewal retries and payment retries are the same schedule. Agents sometimes assume\nsubscriptions have their own retry timer. They do not.",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P38",
+      "kind": "procedure",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "No, the queued events do not fire straight away. A customer who fixes their endpoint mid-backoff will receive the queued events on the next scheduled attempt, not immediately. [HC-4006-structured-005]",
+      "cited_sources": "[HC-4006-structured-005]\n## Webhook delivery and retries\n\nA webhook delivery that does not return a 2xx within 10 seconds is treated as\nfailed. Failed deliveries are retried with exponential backoff over 24 hours, at\nroughly 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours and 24 hours. After the\nfinal attempt the event is dropped and is not recoverable from the API.\n\nRetries are per endpoint, not per event. If an endpoint is failing, every event\nqueued for it backs off together. A customer who fixes their endpoint mid-backoff\nwill receive the queued events on the next scheduled attempt, not immediately.\n\nSignature verification did not change, but the signed payload now includes the\nevent name. Customers who verify signatures against a stored template must update\nthat template or every delivery will fail verification.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P39",
+      "kind": "procedure",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "There are 4 payment attempts before the subscription is suspended, with the final suspension occurring 14 days after the first attempt. [HC-4003-structured-003]",
+      "cited_sources": "[HC-4003-structured-003]\n## Dunning and retry schedule\n\nWhen a renewal payment fails, BL2 retries on a fixed schedule and then suspends\nthe subscription. The schedule replaced the legacy \"3 attempts over 10 days\" rule\nand is not configurable per account.\n\n| Attempt | When | Notification sent | Subscription state |\n|---|---|---|---|\n| 1 | Immediately on renewal | None | Active |\n| 2 | 24 hours after attempt 1 | Email to billing contact | Active |\n| 3 | 72 hours after attempt 1 | Email to billing contact and account owner | Active, banner shown in app |\n| 4 | 7 days after attempt 1 | Email plus in-app blocking modal | Past due |\n| Final | 14 days after attempt 1 | Suspension email | Suspended, data retained 60 days |",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P41",
+      "kind": "multi_part",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": false,
+      "assertion_score": 0.8333,
+      "failure_modes": [
+        "refusal_then_answer"
+      ],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": false,
+          "detail": "refusal text carries an answer",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "I can help with the invoice layout question, but I need to address the ERR-5108 error first.\n\nREFUSED: The help-centre corpus does not contain this information.\nMissing: ERR-5108 error code cause and fix\n\nFor the invoice layout change, the invoice layout changed because tax is now calculated per line item instead of once per invoice, and totals are unchanged, so you should point the customer at the invoice PDF which shows the same grand total as before, and you should not promise a re-issue of old invoices in the new layout because historical invoices are served from the archive and keep their original layout permanently [HC-4001-structured-006].",
+      "cited_sources": "[HC-4001-structured-006]\n## What to tell a customer who asks why their invoice looks different\n\nSay that the invoice layout changed because tax is now calculated per line item\ninstead of once per invoice. Totals are unchanged. Point them at the invoice PDF,\nwhich shows the same grand total as before. Do not promise a re-issue of old\ninvoices in the new layout, because historical invoices are served from the\narchive and keep their original layout permanently.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P43",
+      "kind": "multi_part",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": false,
+      "assertion_score": 0.6,
+      "failure_modes": [
+        "unchecked_answer",
+        "wrong_source"
+      ],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": false,
+          "detail": "no resolvable [chunk_id] in the answer",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": false
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": false,
+          "detail": "cited chunk does not contain the required text",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "A refund can be issued back to the original card only if the original token still resolves; if the token was dropped during migration, the refund cannot be returned to the card and must be issued as account credit instead. Agents can issue account credit up to 250 in account currency without approval.",
+      "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P45",
+      "kind": "multi_part",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "The pay call changed from `POST /v1/invoices/{id}/pay` to `POST /v2/billing/invoices/{id}/payments` and now returns 202, settling asynchronously instead of synchronously, so callers that assumed a synchronous 200 will misreport failures [HC-4006-structured-002].\n\nThe plan field changed in the `GET /v2/billing/subscriptions` endpoint: the `plan` field now returns the new capability-tier name instead of the legacy seat-count name [HC-4006-structured-002].",
+      "cited_sources": "[HC-4006-structured-002]\n## Endpoint mapping\n\n| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/invoices` | `GET /v2/billing/invoices` | Pagination is cursor-based. The `page` parameter is ignored and returns the first page silently. |\n| `GET /v1/invoices/{id}` | `GET /v2/billing/invoices/{id}` | The `number` field now includes a revision suffix on reissued invoices. |\n| `POST /v1/invoices/{id}/pay` | `POST /v2/billing/invoices/{id}/payments` | Returns 202 and settles asynchronously. Callers that assumed a synchronous 200 will misreport failures. |\n| `GET /v1/subscriptions` | `GET /v2/billing/subscriptions` | The `plan` field returns the new capability-tier name, not the legacy seat-count name. |\n| `POST /v1/subscriptions/{id}/cancel` | `POST /v2/billing/subscriptions/{id}/cancellations` | Cancellation is now scheduled at period end by default. Pass `immediate=true` for the old behaviour. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P47",
+      "kind": "noisy",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "For a MIG-310 (Deferred) account, the agent action is to wait one night and escalate only if the badge is unchanged after 48 hours.\n\n[HC-4001-structured-005]",
+      "cited_sources": "[HC-4001-structured-005]\n| Code | Badge text | Meaning | Agent action |\n|---|---|---|---|\n| MIG-100 | Migrated | The account moved cleanly. Balances match to the cent. | None. Treat the account as normal. |\n| MIG-140 | Migrated with rounding | Balance differs from BL1 by less than 0.05 in account currency. The difference was written off automatically. | None. Explain the write-off if the customer asks. |\n| MIG-220 | Partial | Invoices moved but at least one credit note failed to import. | Open a Billing Ops ticket with the account ID. Do not reissue invoices yourself. |\n| MIG-310 | Deferred | The account was skipped because a payment was in flight at cutover. It is retried nightly. | Wait one night. Escalate only if the badge is unchanged after 48 hours. |\n| MIG-450 | Blocked | The account has a legacy contract term that BL2 cannot represent. | Escalate to Billing Ops immediately. These accounts cannot self-serve any plan change. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P51",
+      "kind": "vague",
+      "expected": "refuse",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "refused",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "refusal_names_what_is_missing",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": true,
+      "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: A specific error code or error description to determine the correct fix.",
+      "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P55",
+      "kind": "cross_article",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "A renewal that fails moves the subscription through the dunning schedule, and a \"past due\" state corresponds to attempt 4, which occurs 7 days after the first attempt and triggers an email plus an in-app blocking modal. The subscription does not cancel at this stage; it continues through the schedule and is only suspended at the final step 14 days after the first attempt, with customer data retained for 60 days. [HC-4003-structured-003] [HC-4004-structured-004]",
+      "cited_sources": "[HC-4003-structured-003]\n## Dunning and retry schedule\n\nWhen a renewal payment fails, BL2 retries on a fixed schedule and then suspends\nthe subscription. The schedule replaced the legacy \"3 attempts over 10 days\" rule\nand is not configurable per account.\n\n| Attempt | When | Notification sent | Subscription state |\n|---|---|---|---|\n| 1 | Immediately on renewal | None | Active |\n| 2 | 24 hours after attempt 1 | Email to billing contact | Active |\n| 3 | 72 hours after attempt 1 | Email to billing contact and account owner | Active, banner shown in app |\n| 4 | 7 days after attempt 1 | Email plus in-app blocking modal | Past due |\n| Final | 14 days after attempt 1 | Suspension email | Suspended, data retained 60 days |\n\n---\n\n[HC-4004-structured-004]\n## Renewal failures\n\nA renewal that cannot be charged does not cancel the subscription. It moves the\nsubscription through the dunning schedule described in the payments article, then\nsuspends it. A suspended subscription keeps customer data for 60 days. After 60\ndays the data is deleted and cannot be restored, even if the customer pays.\n\nRenewal retries and payment retries are the same schedule. Agents sometimes assume\nsubscriptions have their own retry timer. They do not.",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P56",
+      "kind": "cross_article",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": false,
+      "assertion_score": 0.8333,
+      "failure_modes": [
+        "refusal_then_answer"
+      ],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": false,
+          "detail": "refusal text carries an answer",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "The context does not state what plan the customer is on now after the decline.\n\nThe fix for ERR-5199 is: Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. [HC-4003-structured-005]\n\nREFUSED: The help-centre corpus does not contain this information.\nMissing: The customer's current plan after the ERR-5199 decline.",
+      "cited_sources": "[HC-4003-structured-005]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5133 | The card is valid but the billing country on the card does not match the account tax country. | Correct the account tax country, or ask the customer to use a card issued in the account country. |\n| ERR-5140 | The payment method is a wallet token bound to a device that is no longer registered. | Ask the customer to pay once from the original device, or to add a normal card. |\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P57",
+      "kind": "cross_article",
+      "expected": "answer",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "retrieval_put_answer_in_context",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "answered",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "has_resolvable_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "no_fabricated_citation",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "cites_a_chunk_that_holds_the_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": false,
+      "answer": "ERR-4032 is caused by a legacy tax code that no longer exists in BL2 and could not be mapped automatically, and the fix is to re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice [HC-4002-structured-004].\n\nERR-7203 is caused by a VAT ID that failed real-time validation against VIES because the number is well-formed but is not registered or is not valid for cross-border trade, and the fix is to ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab [HC-4005-structured-003].\n\nThe two errors are not related: ERR-4032 concerns a missing legacy tax code mapping on an invoice line item, while ERR-7203 concerns a VAT ID failing VIES validation [HC-4002-structured-004][HC-4005-structured-003].",
+      "cited_sources": "[HC-4002-structured-004]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4010 | The invoice references a customer address that failed validation during import. Most often a missing postal code. | Open Billing then Customer Details, complete the address, then click Revalidate. The invoice finalises on the next hourly run. |\n| ERR-4021 | Two line items on the same invoice resolve to the same metered usage record. This happens on accounts that had overlapping legacy subscriptions. | Void the invoice, then run Rebuild Usage for the period. Never delete the usage record directly. |\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |\n\n---\n\n[HC-4005-structured-003]\n## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |",
+      "cached_generation": true
+    },
+    {
+      "case_id": "P59",
+      "kind": "out_of_corpus",
+      "expected": "refuse",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "refused",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "refusal_names_what_is_missing",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": true,
+      "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: Instructions for issuing a refund from the Stripe dashboard.",
+      "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
+      "cached_generation": false
+    },
+    {
+      "case_id": "P60",
+      "kind": "out_of_corpus",
+      "expected": "refuse",
+      "is_regression": false,
+      "regression_trace": null,
+      "banned_mode": null,
+      "regression_verdict": null,
+      "passed": true,
+      "assertion_score": 1.0,
+      "failure_modes": [],
+      "checks": [
+        {
+          "name": "not_refusal_then_answer",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "refused",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        },
+        {
+          "name": "refusal_names_what_is_missing",
+          "passed": true,
+          "detail": "",
+          "applicable": true
+        }
+      ],
+      "judge": null,
+      "refused": true,
+      "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: The list price of the Growth plan in euros.",
+      "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
+      "cached_generation": false
+    }
+  ]
+}

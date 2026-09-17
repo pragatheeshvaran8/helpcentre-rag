@@ -1,0 +1,117 @@
+{
+  "comparable": true,
+  "incomplete_runs": [],
+  "mismatches": {},
+  "prompt_changed": true,
+  "pass_rate": {
+    "before": 0.55,
+    "after": 0.6667
+  },
+  "passed": {
+    "before": 33,
+    "after": 40,
+    "n": 60
+  },
+  "by_kind": {
+    "code_lookup": {
+      "before": 11,
+      "after": 12,
+      "n": 18
+    },
+    "cross_article": {
+      "before": 0,
+      "after": 2,
+      "n": 3
+    },
+    "multi_part": {
+      "before": 5,
+      "after": 5,
+      "n": 6
+    },
+    "noisy": {
+      "before": 3,
+      "after": 2,
+      "n": 5
+    },
+    "out_of_corpus": {
+      "before": 3,
+      "after": 3,
+      "n": 3
+    },
+    "policy": {
+      "before": 2,
+      "after": 2,
+      "n": 7
+    },
+    "procedure": {
+      "before": 3,
+      "after": 5,
+      "n": 6
+    },
+    "symptom": {
+      "before": 2,
+      "after": 5,
+      "n": 8
+    },
+    "vague": {
+      "before": 4,
+      "after": 4,
+      "n": 4
+    }
+  },
+  "failure_modes": {
+    "retrieval_miss": {
+      "before": 0,
+      "after": 0
+    },
+    "false_refusal": {
+      "before": 21,
+      "after": 17
+    },
+    "unchecked_answer": {
+      "before": 4,
+      "after": 1
+    },
+    "fabricated_citation": {
+      "before": 0,
+      "after": 0
+    },
+    "wrong_source": {
+      "before": 5,
+      "after": 3
+    },
+    "refusal_then_answer": {
+      "before": 10,
+      "after": 5
+    },
+    "missed_refusal": {
+      "before": 0,
+      "after": 0
+    }
+  },
+  "regressions": {
+    "before": {
+      "total": 6,
+      "held": 2,
+      "recurred": [
+        "P31",
+        "P34"
+      ],
+      "new_break": [
+        "P02",
+        "P23"
+      ]
+    },
+    "after": {
+      "total": 6,
+      "held": 2,
+      "recurred": [
+        "P02",
+        "P17",
+        "P31",
+        "P34"
+      ],
+      "new_break": []
+    }
+  }
+}
