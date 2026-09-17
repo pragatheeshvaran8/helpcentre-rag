@@ -617,6 +617,324 @@ def test_w5_taxonomy_and_prediction() -> None:
     check("the prediction carries a guard against a cheap win", bool(PREDICTION["guard"].strip()))
 
 
+
+
+# ---------------------------------------------------------------------------
+# Week 7: the agent, its stop conditions, and the race
+# ---------------------------------------------------------------------------
+def test_w7_tickets() -> None:
+    """The ticket set has to contain the case AGAINST an agent, not just for it."""
+    from evals.w7_tickets import MULTI, REFUSE, SINGLE, TICKETS, counts, ticket_set
+    from rag.keyword import build_index
+    from rag.retriever import chunk_answers_question
+
+    n = counts()
+    check(
+        "every ticket shape is represented",
+        all(n[s] > 0 for s in (MULTI, SINGLE, REFUSE)),
+        str(n),
+    )
+    check(
+        "there are single-part tickets, so the loop can lose",
+        n[SINGLE] >= 3,
+        f"{n[SINGLE]} single-part",
+    )
+    check(
+        "there are tickets the corpus cannot answer",
+        n[REFUSE] >= 2,
+        f"{n[REFUSE]} out of corpus",
+    )
+
+    ids = [t["id"] for t in TICKETS]
+    check("ticket ids are unique", len(ids) == len(set(ids)))
+
+    multi = [t for t in TICKETS if t["shape"] == MULTI]
+    check(
+        "every multi-part ticket really has several parts",
+        all(len(t["requirements"]) >= 2 for t in multi),
+        str([t["id"] for t in multi if len(t["requirements"]) < 2]),
+    )
+    check(
+        "the parts count matches the requirements",
+        all(t["parts"] == max(len(t["requirements"]), 1) for t in TICKETS),
+        str([t["id"] for t in TICKETS if t["parts"] != max(len(t["requirements"]), 1)]),
+    )
+
+    narrow = [t["id"] for t in multi if len({r["article_id"] for r in t["requirements"]}) < 2]
+    check(
+        "most multi-part tickets span more than one article",
+        len(narrow) <= 1,
+        f"single-article: {narrow}",
+    )
+
+    # A requirement no chunk can satisfy is a ticket nobody can ever pass.
+    index = build_index(STRATEGY_STRUCTURED)
+    unsatisfiable = []
+    for ticket in TICKETS:
+        for req in ticket["requirements"]:
+            if not any(
+                index.metadatas[i].get("article_id") == req["article_id"]
+                and chunk_answers_question(index.texts[i], req["must_contain"])
+                for i in range(len(index.ids))
+            ):
+                unsatisfiable.append((ticket["id"], req["article_id"]))
+    check("every requirement is satisfiable by a real chunk", not unsatisfiable, str(unsatisfiable))
+
+    check(
+        "ticket_set carries the kind key the checks read",
+        all("kind" in t for t in ticket_set()),
+    )
+
+
+def test_w7_tools() -> None:
+    """A tool must never raise, and the descriptions must tell them apart."""
+    from agent.tools import TOOLS, catalogue, execute
+
+    check("there is a terminal tool", "finish" in TOOLS)
+    check("there is more than one way to look something up", len(TOOLS) >= 3, str(list(TOOLS)))
+
+    for name, tool in TOOLS.items():
+        check(f"{name} has a description a model could act on", len(tool.description) > 80)
+
+    check(
+        "each search tool says what the other is for",
+        "lookup_error_code" in TOOLS["search_help_centre"].description
+        and "search_help_centre" in TOOLS["lookup_error_code"].description,
+    )
+    text = catalogue()
+    check("the catalogue names every tool", all(name in text for name in TOOLS))
+
+    # Every failure path returns an observation instead of raising.
+    failures = [
+        ("unknown tool", "nope", {}),
+        ("wrong argument", "search_help_centre", {"wrong": 1}),
+        ("not a code", "lookup_error_code", {"code": "how do I void an invoice"}),
+        ("empty query", "search_help_centre", {"query": ""}),
+    ]
+    for label, name, args in failures:
+        try:
+            result = execute(name, args)
+            check(f"{label} comes back as an observation, not an exception", not result.ok)
+        except Exception as exc:
+            check(f"{label} comes back as an observation, not an exception", False, str(exc))
+
+    exact = execute("lookup_error_code", {"code": "ERR-4032"})
+    check("an exact code lookup finds the code", exact.ok and bool(exact.chunks))
+    sloppy = execute("lookup_error_code", {"code": "err 4032"})
+    check(
+        "a sloppily typed code finds the same chunk",
+        bool(sloppy.chunks)
+        and bool(exact.chunks)
+        and sloppy.chunks[0]["chunk_id"] == exact.chunks[0]["chunk_id"],
+    )
+
+
+def _scripted(loop_mod, *replies):
+    """A stand-in for the model, so the loop can be tested without an API key."""
+    it = iter(replies)
+
+    def fake(ticket, memory, budget):
+        budget.spend_call()
+        raw = next(it, '{"thought":"","tool":"finish","args":{"answer":"stub"}}')
+        try:
+            return loop_mod._parse(raw), raw
+        except Exception:
+            return None, raw
+
+    return fake
+
+
+def test_w7_stop_conditions() -> None:
+    """A loop without a proven exit is exactly what this week warns about."""
+    import json as _json
+
+    import agent.loop as loop_mod
+    from agent.budget import CALL_LIMIT, FINISHED, REPEAT_LIMIT, STEP_LIMIT, Budget
+
+    real_decide, real_forced = loop_mod._decide, loop_mod._forced_answer
+    try:
+        loop_mod._forced_answer = lambda t, m, b: "REFUSED: stub, the budget ran out."
+
+        loop_mod._decide = _scripted(
+            loop_mod,
+            '{"thought":"a","tool":"lookup_error_code","args":{"code":"ERR-4032"}}',
+            '{"thought":"b","tool":"finish","args":{"answer":"Re-map it [HC-4002-structured-004]."}}',
+        )
+        done = loop_mod.run("ERR-4032?")
+        check("a loop that calls finish stops with finished", done.stop_reason == FINISHED)
+        check("a finished run records every step", len(done.steps) == 2)
+        check("a finished run resolves its citations", any(c.resolves for c in done.citations))
+        check("a finished run keeps what the tools returned", len(done.retrieved) > 0)
+
+        endless = [
+            _json.dumps(
+                {"thought": f"t{i}", "tool": "search_help_centre", "args": {"query": f"q{i}"}}
+            )
+            for i in range(50)
+        ]
+
+        loop_mod._decide = _scripted(loop_mod, *endless)
+        capped = loop_mod.run("never ends", budget=Budget(max_steps=3))
+        check("the step limit stops the loop", capped.stop_reason == STEP_LIMIT)
+        check("the step limit is obeyed exactly", len(capped.steps) == 3, str(len(capped.steps)))
+
+        loop_mod._decide = _scripted(loop_mod, *endless)
+        broke = loop_mod.run("never ends", budget=Budget(max_steps=99, max_llm_calls=4))
+        check("the call limit stops the loop", broke.stop_reason == CALL_LIMIT)
+
+        # A repeat is warned once, then stopped. The first live run repeated at
+        # the exact moment it had every fact it needed, and stopping there threw
+        # away a complete run. One warning usually converts that into a finish.
+        loop_mod._decide = _scripted(
+            loop_mod,
+            '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
+            '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
+            '{"thought":"fine","tool":"finish","args":{"answer":"ok [HC-4002-structured-004]"}}',
+        )
+        warned = loop_mod.run("repeats once, then takes the hint")
+        check(
+            "the first repeat is a warning, not a stop",
+            warned.stop_reason == FINISHED,
+            warned.stop_reason,
+        )
+        check(
+            "the warning is recorded as its own step",
+            any(s.tool == "(repeated)" for s in warned.steps),
+            str([s.tool for s in warned.steps]),
+        )
+
+        loop_mod._decide = _scripted(
+            loop_mod,
+            '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
+            '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
+            '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
+        )
+        stuck = loop_mod.run("going nowhere")
+        check(
+            "a repeat after the warning does stop the loop",
+            stuck.stop_reason == REPEAT_LIMIT,
+            stuck.stop_reason,
+        )
+
+        loop_mod._decide = _scripted(loop_mod, *endless)
+        cut = loop_mod.run("never ends", budget=Budget(max_steps=2))
+        check("a cut-short run still produces an answer", bool(cut.answer))
+        check("a cut-short run is never labelled complete", not cut.completed)
+
+        loop_mod._decide = _scripted(
+            loop_mod,
+            "I will search the help centre now.",
+            '{"thought":"ok","tool":"finish","args":{"answer":"done [HC-4002-structured-004]"}}',
+        )
+        recovered = loop_mod.run("bad json first")
+        check("an unparsable reply costs a step, not the run", recovered.stop_reason == FINISHED)
+        check("the unparsable step is recorded", recovered.steps[0].tool == "(unparsed)")
+    finally:
+        loop_mod._decide, loop_mod._forced_answer = real_decide, real_forced
+
+
+def test_w7_parser() -> None:
+    """The protocol has to survive what a weak model actually emits."""
+    from agent.loop import _parse
+
+    survivable = {
+        "a raw newline, which every refusal has": (
+            '{"thought":"x","tool":"finish","args":{"answer":"REFUSED: not here.\n'
+            'Missing: that topic."}}'
+        ),
+        "a code fence": '```json\n{"thought":"x","tool":"finish","args":{"answer":"d"}}\n```',
+        "chatter around the object": (
+            'Sure:\n{"thought":"x","tool":"search_help_centre","args":{"query":"vat"}}\nHope that helps'
+        ),
+    }
+    for label, raw in survivable.items():
+        try:
+            check(f"the parser survives {label}", bool(_parse(raw)["tool"]))
+        except Exception as exc:
+            check(f"the parser survives {label}", False, f"{type(exc).__name__}: {exc}")
+
+    for label, raw in {
+        "prose with no object": "I think I should search next.",
+        "an object with no tool": '{"thought":"x"}',
+    }.items():
+        try:
+            _parse(raw)
+            check(f"the parser rejects {label}", False, "it was accepted")
+        except Exception:
+            check(f"the parser rejects {label}", True)
+
+
+def test_w7_race_is_fair() -> None:
+    """Both runners must be scored by the same rules, or the race proves nothing."""
+    from agent.loop import AgentRun
+    from agent.workflow import WorkflowRun
+    from evals.w7_race import part_coverage, recommend
+    from evals.w7_tickets import TICKETS_BY_ID
+
+    for field_name in ("answer", "refused", "retrieved", "citations", "elapsed_s", "llm_calls"):
+        check(
+            f"both runners expose {field_name} to the scorer",
+            hasattr(AgentRun(question="x"), field_name)
+            and hasattr(WorkflowRun(question="x"), field_name),
+        )
+
+    ticket = TICKETS_BY_ID["T01"]
+
+    class _Cite:
+        def __init__(self, article_id, text):
+            self.chunk_id = "c"
+            self.article_id = article_id
+            self.text = text
+            self.resolves = True
+
+    class _Run:
+        def __init__(self, retrieved, citations):
+            self.retrieved = retrieved
+            self.citations = citations
+
+    hits = [
+        {"article_id": "HC-4002", "text": "ERR-4032 fix: Billing then Tax Codes"},
+        {"article_id": "HC-4005", "text": "ERR-7215 fix: update the legal entity name"},
+    ]
+    cites = [_Cite(h["article_id"], h["text"]) for h in hits]
+
+    full = part_coverage(_Run(hits, cites), ticket)
+    check("a fully answered two-part ticket scores 2 of 2", full.cited == 2 and full.fully_cited)
+
+    partial = part_coverage(_Run(hits[:1], cites[:1]), ticket)
+    check("a half answered two-part ticket scores 1 of 2", partial.cited == 1)
+    check("a half answered ticket is not counted as fully answered", not partial.fully_cited)
+
+    # The recommendation must be derivable, and must be able to say "workflow".
+    agent_better = {
+        "multi_fully_cited": 5,
+        "multi_n": 6,
+        "calls_per_ticket": 3.0,
+        "median_seconds": 9.0,
+        "by_shape": {"single": {"passed": 4, "llm_calls": 12}, "refuse": {"passed": 2}},
+    }
+    workflow_row = {
+        "multi_fully_cited": 2,
+        "multi_n": 6,
+        "calls_per_ticket": 1.0,
+        "median_seconds": 3.0,
+        "by_shape": {"single": {"passed": 4, "llm_calls": 4}, "refuse": {"passed": 2}},
+    }
+    check("the rule can pick the agent", recommend(agent_better, workflow_row).ship == "agent")
+    check(
+        "the rule picks the simple one when the loop buys no coverage",
+        recommend(dict(agent_better, multi_fully_cited=2), workflow_row).ship == "workflow",
+    )
+    check(
+        "the rule picks the simple one when the loop is worse",
+        recommend(dict(agent_better, multi_fully_cited=1), workflow_row).ship == "workflow",
+    )
+    check(
+        "the recommendation always carries a reason",
+        bool(recommend(agent_better, workflow_row).reason),
+    )
+
+
 # ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(description="Acceptance tests.")
@@ -647,6 +965,11 @@ def main() -> None:
         ("w5 traces are complete", test_w5_traces_are_complete),
         ("w5 notes came before the groups", test_w5_notes_came_before_the_groups),
         ("w5 taxonomy and prediction", test_w5_taxonomy_and_prediction),
+        ("w7 ticket set", test_w7_tickets),
+        ("w7 tools", test_w7_tools),
+        ("w7 stop conditions", test_w7_stop_conditions),
+        ("w7 action parser", test_w7_parser),
+        ("w7 race is fair", test_w7_race_is_fair),
     ]
     if args.with_generation:
         groups.append(("generation and refusal", test_generation))

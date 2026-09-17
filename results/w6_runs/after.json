@@ -23,7 +23,7 @@
     "prompt_sha": "4a4b6fc6a1a4e1af",
     "corpus_sha": "b5eed06a26dba4e3"
   },
-  "elapsed_s": 110.5,
+  "elapsed_s": 50.1,
   "summary": {
     "cases": 43,
     "passed": 34,
@@ -344,7 +344,7 @@
       "refused": false,
       "answer": "ERR-4055 means the billing period on the invoice overlaps a period that is already invoiced and paid. You should void the newer invoice and keep the paid invoice, which is the correct one. Before closing the ticket, confirm the customer has not been charged twice. [HC-4002-structured-005]",
       "cited_sources": "[HC-4002-structured-005]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4044 | The invoice total is negative because an imported credit note exceeded the invoice value. | Convert the remainder to account credit using Apply as Credit. Do not issue a refund for the difference. |\n| ERR-4055 | The billing period on the invoice overlaps a period that is already invoiced and paid. | Void the newer invoice. The paid invoice is the correct one. Confirm the customer has not been charged twice before closing the ticket. |\n| ERR-4061 | The invoice currency does not match the account currency. Caused by a mid-cycle currency change in the legacy system. | Escalate to Billing Ops. Agents cannot change invoice currency, and editing the account currency will not fix the existing invoice. |",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P05",
@@ -459,7 +459,7 @@
       "refused": false,
       "answer": "ERR-4077 means the PDF rendering failed because a line item description contains an unsupported control character, and the fix is to edit the line item description to remove the character and then click Regenerate PDF. The invoice itself is valid and payable meanwhile.",
       "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P08",
@@ -679,7 +679,7 @@
       "refused": false,
       "answer": "For ERR-5140, the customer should pay once from the original device, or add a normal card. [HC-4003-structured-005]",
       "cited_sources": "[HC-4003-structured-005]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5133 | The card is valid but the billing country on the card does not match the account tax country. | Correct the account tax country, or ask the customer to use a card issued in the account country. |\n| ERR-5140 | The payment method is a wallet token bound to a device that is no longer registered. | Ask the customer to pay once from the original device, or to add a normal card. |\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P12",
@@ -734,7 +734,7 @@
       "refused": false,
       "answer": "No, you should not keep retrying. The context states that for ERR-5199, the processor rejected the request because the account is flagged for manual review, and the fix is to not retry and escalate to Payments Ops, because retrying while flagged extends the review window.\n\n[HC-4003-structured-005]",
       "cited_sources": "[HC-4003-structured-005]\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5133 | The card is valid but the billing country on the card does not match the account tax country. | Correct the account tax country, or ask the customer to use a card issued in the account country. |\n| ERR-5140 | The payment method is a wallet token bound to a device that is no longer registered. | Ask the customer to pay once from the original device, or to add a normal card. |\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P13",
@@ -792,7 +792,7 @@
       "refused": true,
       "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: The fix for ERR-6203.\n\nWait, let me re-read the context blocks.\n\nThe fix for ERR-6203 is: \"Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued.\" [HC-4004-structured-005]",
       "cited_sources": "[HC-4004-structured-005]\n## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P15",
@@ -902,7 +902,7 @@
       "refused": false,
       "answer": "No invoice is affected. The ERR-7101 error means the tax ID format is wrong for the selected country, and the field rejects the value on save, so no invoice is affected yet. Correct the format on the Tax tab. [HC-4005-structured-003]",
       "cited_sources": "[HC-4005-structured-003]\n## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P17",
@@ -957,7 +957,7 @@
       "refused": false,
       "answer": "For ERR-7215, the customer name on the account does not match the name registered against the VAT ID, so you must update the legal entity name on the account to match the registration exactly, then revalidate. [HC-4005-structured-003]",
       "cited_sources": "[HC-4005-structured-003]\n## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P18",
@@ -1069,7 +1069,7 @@
       "refused": true,
       "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: The Phase 3 cutover freeze window dates/times needed to confirm whether 1 June at 03:12 UTC falls inside the four-hour read-only billing ledger window.",
       "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P20",
@@ -1404,7 +1404,7 @@
       "refused": false,
       "answer": "No, something is not wrong. Wallet payment methods behave differently, and Apple Pay tokens are device-bound and were re-issued automatically on first use. A customer using a wallet may see one extra authentication prompt after migration, and that prompt is expected and appears once per device. [HC-4003-structured-002]",
       "cited_sources": "[HC-4003-structured-002]\nWallet payment methods behave differently. Apple Pay and Google Pay tokens are\ndevice-bound and were re-issued automatically on first use. A customer using a\nwallet may see one extra authentication prompt after migration. That prompt is\nexpected and appears once per device.",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P27",
@@ -1459,7 +1459,7 @@
       "refused": false,
       "answer": "No, you must not void an invoice that a customer has already paid, even if it shows an error code. The correct route is always a Billing Ops ticket. [HC-4002-structured-007]",
       "cited_sources": "[HC-4002-structured-007]\n## What agents must not do\n\nNever void an invoice that a customer has already paid, even if it shows an error\ncode. Voiding a paid invoice creates an orphaned payment that has to be repaired\nby hand in the ledger. If the invoice is paid and shows an error, the correct\nroute is always a Billing Ops ticket.\n\nNever edit tax codes on a historical invoice to \"make the total match\". The tax\ncode drives the ledger entry, and changing it after payment causes the account to\ndrift out of reconciliation.",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P28",
@@ -1679,7 +1679,7 @@
       "refused": false,
       "answer": "No, you cannot give a customer an extension on the v1 API sunset. The v1 endpoints stop responding on 30 September 2026, and there is no extension process. Customers who ask for one should be routed to their account manager rather than told no by an agent. [HC-4006-structured-001]",
       "cited_sources": "[HC-4006-structured-001]\n# Billing API and Webhook Changes\n\n## Versioning and sunset\n\nThe billing API moved from v1 to v2 at cutover. Both versions answer today. The v1\nendpoints stop responding on 30 September 2026. After that date a v1 request\nreturns HTTP 410 with no body. There is no extension process, and customers who\nask for one should be routed to their account manager rather than told no by an\nagent.\n\nThe v2 API is not a superset of v1. Three v1 endpoints have no v2 equivalent at\nall, because the underlying concept no longer exists. Those are listed below as\n\"removed\". Customers relying on them need a code change, not a URL change.\n\nAuthentication did not change. The same API keys work against both versions. Keys\nissued before migration were not rotated.",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P32",
@@ -1844,7 +1844,7 @@
       "refused": false,
       "answer": "A suspended subscription keeps customer data for 60 days, after which the data is deleted and cannot be restored, even if the customer pays. [HC-4004-structured-004]",
       "cited_sources": "[HC-4004-structured-004]\n## Renewal failures\n\nA renewal that cannot be charged does not cancel the subscription. It moves the\nsubscription through the dunning schedule described in the payments article, then\nsuspends it. A suspended subscription keeps customer data for 60 days. After 60\ndays the data is deleted and cannot be restored, even if the customer pays.\n\nRenewal retries and payment retries are the same schedule. Agents sometimes assume\nsubscriptions have their own retry timer. They do not.",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P38",
@@ -1954,7 +1954,7 @@
       "refused": false,
       "answer": "There are 4 payment attempts before the subscription is suspended, with the final suspension occurring 14 days after the first attempt. [HC-4003-structured-003]",
       "cited_sources": "[HC-4003-structured-003]\n## Dunning and retry schedule\n\nWhen a renewal payment fails, BL2 retries on a fixed schedule and then suspends\nthe subscription. The schedule replaced the legacy \"3 attempts over 10 days\" rule\nand is not configurable per account.\n\n| Attempt | When | Notification sent | Subscription state |\n|---|---|---|---|\n| 1 | Immediately on renewal | None | Active |\n| 2 | 24 hours after attempt 1 | Email to billing contact | Active |\n| 3 | 72 hours after attempt 1 | Email to billing contact and account owner | Active, banner shown in app |\n| 4 | 7 days after attempt 1 | Email plus in-app blocking modal | Past due |\n| Final | 14 days after attempt 1 | Suspension email | Suspended, data retained 60 days |",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P41",
@@ -2420,7 +2420,7 @@
       "refused": true,
       "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: Instructions for issuing a refund from the Stripe dashboard.",
       "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
-      "cached_generation": false
+      "cached_generation": true
     },
     {
       "case_id": "P60",
@@ -2457,7 +2457,7 @@
       "refused": true,
       "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: The list price of the Growth plan in euros.",
       "cited_sources": "NO RESOLVABLE SOURCES WERE CITED.",
-      "cached_generation": false
+      "cached_generation": true
     }
   ]
 }

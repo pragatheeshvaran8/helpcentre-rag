@@ -1,0 +1,621 @@
+{
+  "agent": {
+    "summary": {
+      "n": 12,
+      "passed": 12,
+      "pass_rate": 1.0,
+      "median_seconds": 28.95,
+      "total_seconds": 398.3,
+      "slowest_seconds": 89.33,
+      "llm_calls": 41,
+      "calls_per_ticket": 3.42,
+      "steps": 39,
+      "completed": 10,
+      "stop_reasons": {
+        "finished": 10,
+        "step_limit": 2
+      },
+      "failure_modes": {},
+      "errors": 0,
+      "parts_retrieved_rate": 1.0,
+      "parts_cited_rate": 1.0,
+      "multi_parts_cited_rate": 1.0,
+      "multi_fully_cited": 6,
+      "multi_n": 6,
+      "by_shape": {
+        "multi": {
+          "n": 6,
+          "passed": 6,
+          "median_seconds": 32.26,
+          "llm_calls": 19,
+          "fully_cited": 6
+        },
+        "single": {
+          "n": 4,
+          "passed": 4,
+          "median_seconds": 9.66,
+          "llm_calls": 8,
+          "fully_cited": 4
+        },
+        "refuse": {
+          "n": 2,
+          "passed": 2,
+          "median_seconds": 79.88,
+          "llm_calls": 14,
+          "fully_cited": 0
+        }
+      }
+    },
+    "scores": [
+      {
+        "ticket_id": "T01",
+        "shape": "multi",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 2,
+          "cited": 2,
+          "total": 2,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 37.15,
+        "llm_calls": 3,
+        "steps": 3,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T02",
+        "shape": "multi",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 2,
+          "cited": 2,
+          "total": 2,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 29.37,
+        "llm_calls": 3,
+        "steps": 3,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T03",
+        "shape": "multi",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 2,
+          "cited": 2,
+          "total": 2,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 35.15,
+        "llm_calls": 3,
+        "steps": 3,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T04",
+        "shape": "multi",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 2,
+          "cited": 2,
+          "total": 2,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 11.32,
+        "llm_calls": 3,
+        "steps": 3,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T05",
+        "shape": "multi",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 3,
+          "cited": 3,
+          "total": 3,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 28.52,
+        "llm_calls": 4,
+        "steps": 4,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T06",
+        "shape": "multi",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 2,
+          "cited": 2,
+          "total": 2,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 55.48,
+        "llm_calls": 3,
+        "steps": 3,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T07",
+        "shape": "single",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 1,
+          "cited": 1,
+          "total": 1,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 9.89,
+        "llm_calls": 2,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T08",
+        "shape": "single",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 1,
+          "cited": 1,
+          "total": 1,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 12.89,
+        "llm_calls": 2,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T09",
+        "shape": "single",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 1,
+          "cited": 1,
+          "total": 1,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 9.42,
+        "llm_calls": 2,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T10",
+        "shape": "single",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 1,
+          "cited": 1,
+          "total": 1,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 9.36,
+        "llm_calls": 2,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T11",
+        "shape": "refuse",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 0,
+          "cited": 0,
+          "total": 0,
+          "fully_retrieved": false,
+          "fully_cited": false
+        },
+        "seconds": 70.42,
+        "llm_calls": 7,
+        "steps": 6,
+        "stop_reason": "step_limit",
+        "refused": true,
+        "completed": false,
+        "error": null
+      },
+      {
+        "ticket_id": "T12",
+        "shape": "refuse",
+        "runner": "agent",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 0,
+          "cited": 0,
+          "total": 0,
+          "fully_retrieved": false,
+          "fully_cited": false
+        },
+        "seconds": 89.33,
+        "llm_calls": 7,
+        "steps": 6,
+        "stop_reason": "step_limit",
+        "refused": true,
+        "completed": false,
+        "error": null
+      }
+    ]
+  },
+  "workflow": {
+    "summary": {
+      "n": 12,
+      "passed": 8,
+      "pass_rate": 0.6667,
+      "median_seconds": 3.52,
+      "total_seconds": 65.59,
+      "slowest_seconds": 19.86,
+      "llm_calls": 12,
+      "calls_per_ticket": 1.0,
+      "steps": 24,
+      "completed": 12,
+      "stop_reasons": {
+        "finished": 12
+      },
+      "failure_modes": {
+        "refusal_then_answer": 2,
+        "false_refusal": 1,
+        "missed_refusal": 1,
+        "unchecked_answer": 1,
+        "wrong_source": 1
+      },
+      "errors": 0,
+      "parts_retrieved_rate": 0.8824,
+      "parts_cited_rate": 0.7059,
+      "multi_parts_cited_rate": 0.6154,
+      "multi_fully_cited": 3,
+      "multi_n": 6,
+      "by_shape": {
+        "multi": {
+          "n": 6,
+          "passed": 3,
+          "median_seconds": 6.38,
+          "llm_calls": 6,
+          "fully_cited": 3
+        },
+        "single": {
+          "n": 4,
+          "passed": 4,
+          "median_seconds": 2.94,
+          "llm_calls": 4,
+          "fully_cited": 4
+        },
+        "refuse": {
+          "n": 2,
+          "passed": 1,
+          "median_seconds": 2.54,
+          "llm_calls": 2,
+          "fully_cited": 0
+        }
+      }
+    },
+    "scores": [
+      {
+        "ticket_id": "T01",
+        "shape": "multi",
+        "runner": "workflow",
+        "passed": false,
+        "failure_modes": [
+          "false_refusal"
+        ],
+        "coverage": {
+          "retrieved": 1,
+          "cited": 0,
+          "total": 2,
+          "fully_retrieved": false,
+          "fully_cited": false
+        },
+        "seconds": 19.86,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": true,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T02",
+        "shape": "multi",
+        "runner": "workflow",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 2,
+          "cited": 2,
+          "total": 2,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 8.97,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T03",
+        "shape": "multi",
+        "runner": "workflow",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 2,
+          "cited": 2,
+          "total": 2,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 4.46,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T04",
+        "shape": "multi",
+        "runner": "workflow",
+        "passed": false,
+        "failure_modes": [
+          "unchecked_answer",
+          "wrong_source"
+        ],
+        "coverage": {
+          "retrieved": 2,
+          "cited": 0,
+          "total": 2,
+          "fully_retrieved": true,
+          "fully_cited": false
+        },
+        "seconds": 3.07,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T05",
+        "shape": "multi",
+        "runner": "workflow",
+        "passed": false,
+        "failure_modes": [
+          "refusal_then_answer"
+        ],
+        "coverage": {
+          "retrieved": 2,
+          "cited": 2,
+          "total": 3,
+          "fully_retrieved": false,
+          "fully_cited": false
+        },
+        "seconds": 7.84,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T06",
+        "shape": "multi",
+        "runner": "workflow",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 2,
+          "cited": 2,
+          "total": 2,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 4.92,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T07",
+        "shape": "single",
+        "runner": "workflow",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 1,
+          "cited": 1,
+          "total": 1,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 2.85,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T08",
+        "shape": "single",
+        "runner": "workflow",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 1,
+          "cited": 1,
+          "total": 1,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 3.97,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T09",
+        "shape": "single",
+        "runner": "workflow",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 1,
+          "cited": 1,
+          "total": 1,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 1.56,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T10",
+        "shape": "single",
+        "runner": "workflow",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 1,
+          "cited": 1,
+          "total": 1,
+          "fully_retrieved": true,
+          "fully_cited": true
+        },
+        "seconds": 3.02,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T11",
+        "shape": "refuse",
+        "runner": "workflow",
+        "passed": true,
+        "failure_modes": [],
+        "coverage": {
+          "retrieved": 0,
+          "cited": 0,
+          "total": 0,
+          "fully_retrieved": false,
+          "fully_cited": false
+        },
+        "seconds": 2.12,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": true,
+        "completed": true,
+        "error": null
+      },
+      {
+        "ticket_id": "T12",
+        "shape": "refuse",
+        "runner": "workflow",
+        "passed": false,
+        "failure_modes": [
+          "refusal_then_answer",
+          "missed_refusal"
+        ],
+        "coverage": {
+          "retrieved": 0,
+          "cited": 0,
+          "total": 0,
+          "fully_retrieved": false,
+          "fully_cited": false
+        },
+        "seconds": 2.95,
+        "llm_calls": 1,
+        "steps": 2,
+        "stop_reason": "finished",
+        "refused": false,
+        "completed": true,
+        "error": null
+      }
+    ]
+  }
+}

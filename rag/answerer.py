@@ -285,6 +285,56 @@ def _is_rate_limit_error(exc: Exception) -> bool:
     return "429" in text and ("rate limit" in text or "rate-limited" in text)
 
 
+def _is_daily_cap(exc: Exception) -> bool:
+    """The hard per-day request cap. Nothing recovers this except the reset.
+
+    Separated from the transient case below because the two need opposite
+    handling and OpenRouter returns 429 for both. Retrying this one only wastes
+    wall clock.
+    """
+    return "free-models-per-day" in str(exc)
+
+
+def _is_transient_rate_limit(exc: Exception) -> bool:
+    """A 429 from the shared upstream pool, which clears in seconds.
+
+    The provider says so itself: "temporarily rate-limited upstream. Please
+    retry shortly". Treating it like the daily cap was costing whole tickets.
+    Probing the same model three times in a row gave two of these and then a
+    success, so the fix is to retry rather than to give up.
+    """
+    return _is_rate_limit_error(exc) and not _is_daily_cap(exc)
+
+
+# A short ladder. Long enough to ride out a busy pool, short enough that a real
+# outage still fails the ticket instead of hanging the run.
+_RETRY_DELAYS = (2.0, 5.0, 12.0)
+
+
+def invoke_with_retry(llm, messages):
+    """Invoke, retrying only the transient 429s.
+
+    The daily cap and every other error are raised straight away. This is the
+    one place that decides a 429 is worth a second attempt, so both the agent
+    and the fixed workflow get the same treatment and neither gets an unfair
+    number of chances in the race.
+    """
+    import time as _time
+
+    last: Exception | None = None
+    for attempt in range(len(_RETRY_DELAYS) + 1):
+        try:
+            return llm.invoke(messages)
+        except Exception as exc:
+            last = exc
+            if not _is_transient_rate_limit(exc) or attempt == len(_RETRY_DELAYS):
+                raise
+            delay = _RETRY_DELAYS[attempt]
+            logger.info("Upstream pool busy, retrying in %.0fs", delay)
+            _time.sleep(delay)
+    raise last  # pragma: no cover - the loop always returns or raises
+
+
 def _rate_limit_reset(exc: Exception) -> str | None:
     """Human-readable reset time from the X-RateLimit-Reset header, if present."""
     match = re.search(r"X-RateLimit-Reset'?\s*:\s*'?(\d{10,13})", str(exc))
@@ -364,7 +414,8 @@ def _invoke_within_budget(scored: list, question: str) -> tuple[str, int, bool]:
         if not blocks:
             break
         try:
-            response = _llm(max_tokens=max_tokens).invoke(
+            response = invoke_with_retry(
+                _llm(max_tokens=max_tokens),
                 [
                     ("system", SYSTEM_PROMPT),
                     (
@@ -373,7 +424,7 @@ def _invoke_within_budget(scored: list, question: str) -> tuple[str, int, bool]:
                             context=format_context(blocks), question=question
                         ),
                     ),
-                ]
+                ],
             )
             return (response.content or "").strip(), len(blocks), degraded
         except Exception as exc:
