@@ -43,6 +43,7 @@ from agent.budget import (
     REPEAT_LIMIT,
     Budget,
 )
+from agent import guard
 from agent.memory import Memory, Step
 from config import STRATEGY_STRUCTURED
 
@@ -57,7 +58,13 @@ from config import STRATEGY_STRUCTURED
 # v3  an empty reply from the provider no longer costs a step, and the prompt
 #     says outright that native tool-call tags are thrown away. Both came from
 #     a live run that spent 2 of its 6 steps on replies it could not parse.
-AGENT_PROMPT_VERSION = "v3"
+# v4  Week 8. Two changes, both defaults, both reversible by argument so the
+#     before-and-after can be reproduced with one variable moved:
+#       - the loop guard now catches a query repeated in different words
+#         anywhere in the run, not an exact repeat of the step before.
+#       - retrieved text is fenced and scanned before the model reads it, and
+#         the final answer is validated before it is returned.
+AGENT_PROMPT_VERSION = "v4"
 
 SYSTEM = """You are a support-desk agent working a customer ticket against a help-centre corpus.
 
@@ -129,6 +136,12 @@ class AgentRun:
     elapsed_s: float = 0.0
     error: str | None = None
 
+    # Week 8. What the defences saw and did on this run.
+    guarded: bool = False
+    injection_hits: list[str] = field(default_factory=list)
+    output_blocked: bool = False
+    block_reasons: list[str] = field(default_factory=list)
+
     @property
     def completed(self) -> bool:
         """Did the loop end because it was done, rather than because it ran out?"""
@@ -163,16 +176,23 @@ def _parse(reply: str) -> dict:
     return {"thought": str(data.get("thought", ""))[:200], "tool": tool, "args": args}
 
 
-def _decide(ticket: str, memory: Memory, budget: Budget) -> tuple[dict | None, str]:
+def _decide(
+    ticket: str, memory: Memory, budget: Budget, guarded: bool = False
+) -> tuple[dict | None, str]:
     """One LLM turn. Returns the parsed action, or None plus the raw reply."""
     from rag.answerer import _llm, invoke_with_retry
 
     history = _HISTORY_HEADER.format(scratchpad=memory.scratchpad()) if memory.steps else ""
+    system = SYSTEM.format(catalogue=tools.catalogue())
+    if guarded:
+        # Layer 1. The model is told, in its own instructions, that fenced text
+        # is quoted data. Cheapest layer, weakest layer, never counted alone.
+        system = system + "\n\n" + guard.TRUST_NOTICE
     budget.spend_call()
     reply = invoke_with_retry(
         _llm(max_tokens=400),
         [
-            ("system", SYSTEM.format(catalogue=tools.catalogue())),
+            ("system", system),
             ("human", USER.format(ticket=ticket, history=history)),
         ],
     )
@@ -186,11 +206,41 @@ def _decide(ticket: str, memory: Memory, budget: Budget) -> tuple[dict | None, s
 # ---------------------------------------------------------------------------
 # The loop
 # ---------------------------------------------------------------------------
-def run(ticket: str, *, budget: Budget | None = None, verbose: bool = False) -> AgentRun:
-    """Work one ticket. Every step is recorded, and every exit is a named reason."""
+def run(
+    ticket: str,
+    *,
+    budget: Budget | None = None,
+    verbose: bool = False,
+    guarded: bool = True,
+    output_markers: tuple[str, ...] = (),
+) -> AgentRun:
+    """Work one ticket. Every step is recorded, and every exit is a named reason.
+
+    `guarded` turns on the three defence layers in agent/guard.py. It defaults
+    to True because that is what should ship. Pass False to reproduce the Week 7
+    behaviour, which is how the injection before-and-after is produced.
+
+    `output_markers` are strings that must never appear in a reply. The attack
+    harness passes its own marker. Production would pass key formats and
+    anything else that would prove an injection landed.
+    """
     budget = budget or Budget()
     memory = Memory()
-    result = AgentRun(question=ticket)
+    result = AgentRun(question=ticket, guarded=guarded)
+
+    if guarded:
+        # The TICKET is untrusted too. A customer writes it, or an agent pastes
+        # a customer's words into it. The first version only scanned retrieved
+        # documents, and the two direct attacks walked straight through: nothing
+        # was stripped, nothing was blocked, and they failed only because the
+        # model happened not to comply that run. That is not a defence, it is
+        # luck with a report attached.
+        scanned_ticket = guard.scan(ticket)
+        if scanned_ticket.hits:
+            result.injection_hits.extend(f"ticket:{h}" for h in scanned_ticket.hits)
+            if verbose:
+                print(f"  guard: stripped {scanned_ticket.hits} from the ticket")
+        ticket = scanned_ticket.text
     started = time.monotonic()
     warned = 0  # how many times it has been told it is repeating itself
 
@@ -202,7 +252,7 @@ def run(ticket: str, *, budget: Budget | None = None, verbose: bool = False) -> 
 
         budget.spend_step()
         try:
-            action, raw = _decide(ticket, memory, budget)
+            action, raw = _decide(ticket, memory, budget, guarded)
         except Exception as exc:
             result.stop_reason = ERROR
             result.error = f"{type(exc).__name__}: {exc}"[:300]
@@ -270,6 +320,20 @@ def run(ticket: str, *, budget: Budget | None = None, verbose: bool = False) -> 
             continue
 
         outcome = tools.execute(action["tool"], action["args"])
+
+        if guarded and outcome.chunks:
+            # Layer 2. Retrieved text is the untrusted channel. Strip anything
+            # shaped like an instruction, then fence what is left so the model
+            # is told it is quoting a document rather than reading orders.
+            scanned = guard.scan(outcome.observation)
+            if scanned.hits:
+                result.injection_hits.extend(scanned.hits)
+                if verbose:
+                    print(f"       guard: stripped {scanned.hits} from the result")
+            outcome.observation = guard.fence(
+                outcome.chunks[0].get("chunk_id", "?"), scanned.text
+            )
+
         step = Step(
             n=budget.steps,
             thought=action["thought"],
@@ -292,6 +356,18 @@ def run(ticket: str, *, budget: Budget | None = None, verbose: bool = False) -> 
     # it was cut short, so no report can mistake it for a completed run.
     if result.stop_reason in EXHAUSTED and not result.answer:
         result.answer = _forced_answer(ticket, memory, budget)
+
+    if guarded:
+        # Layer 3. This does not care how the answer was produced. It checks
+        # what came out. A payload nobody anticipated still has to get its
+        # result past this, and that is why it is the layer that holds.
+        verdict = guard.validate_output(result.answer, markers=output_markers)
+        if not verdict.allowed:
+            result.output_blocked = True
+            result.block_reasons = verdict.reasons
+            result.answer = verdict.answer
+            if verbose:
+                print(f"       guard: output blocked, {verdict.reasons}")
 
     result.steps = memory.steps
     result.retrieved = memory.chunks

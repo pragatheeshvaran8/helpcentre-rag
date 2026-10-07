@@ -225,6 +225,25 @@ def score_all(tickets: list[dict], caches: dict) -> dict:
 # Reporting
 # ---------------------------------------------------------------------------
 def write_report(tickets: list[dict], scored: dict, path: Path) -> None:
+    # Refuse to replace a finished report with an empty one.
+    #
+    # The staleness guard treats a record made by an older loop as missing, on
+    # purpose. Week 8 changed the loop, so every Week 7 record went stale at
+    # once, and the next --report wrote a file whose every row said "not run".
+    # The guard was right. Overwriting the finished report with the result was
+    # not: that file is the record of what happened in Week 7, and changing the
+    # agent afterwards does not change what Week 7 measured.
+    # EITHER side being empty is enough. Week 8 bumped the agent loop version,
+    # so all twelve agent records went stale while the workflow's stayed valid.
+    # A first version checked that BOTH sides were empty and happily wrote a
+    # report whose every agent row read "not run".
+    one_side_empty = not scored[AGENT]["scores"] or not scored[WORKFLOW]["scores"]
+    if one_side_empty and path.exists():
+        print(term.yellow("Every cached run is stale, so there is nothing to score."))
+        print(term.yellow(f"Leaving {path.name} as it is rather than blanking it."))
+        print(term.grey("Re-run the race to produce a current report."))
+        return
+
     a, w = scored[AGENT], scored[WORKFLOW]
     agent_sum, work_sum = a["summary"], w["summary"]
     complete = not a["missing"] and not w["missing"]
@@ -441,15 +460,19 @@ def main() -> None:
     out = Path(get_settings().results_dir)
     write_report(all_tickets, scored, out / "w7_race.md")
     write_steps(all_tickets, caches, out / "w7_agent_steps.md")
-    (_dir() / "scores.json").write_text(
-        json.dumps(
-            {r: {"summary": scored[r]["summary"], "scores": [s.as_dict() for s in scored[r]["scores"]]}
-             for r in RUNNERS},
-            indent=2,
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
+    # Same protection as the report: do not replace a finished scores file with
+    # one that has an empty side.
+    if scored[AGENT]["scores"] and scored[WORKFLOW]["scores"]:
+        payload = {
+            runner: {
+                "summary": scored[runner]["summary"],
+                "scores": [s.as_dict() for s in scored[runner]["scores"]],
+            }
+            for runner in RUNNERS
+        }
+        (_dir() / "scores.json").write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
 
     a, w = scored[AGENT]["summary"], scored[WORKFLOW]["summary"]
     print(term.rule("result"))

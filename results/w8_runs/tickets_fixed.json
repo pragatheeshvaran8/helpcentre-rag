@@ -1,0 +1,1208 @@
+{
+  "T02": {
+    "question": "Customer's card was declined with ERR-5108 on renewal. While I had them on the phone they also said their plan change is blocked with ERR-6203. Can you sort both out?",
+    "answer": "For the declined renewal with ERR-5108: the saved card token was not re-tokenised during cutover, so the token reference points at a BL1 record that no longer resolves. Ask the customer to re-enter the card once; the new token is created automatically and the failed renewal retries within the hour [HC-4003-structured-004]. For the blocked plan change with ERR-6203: the target plan does not include enough seats for the account's current active users. Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued [HC-4004-structured-005].",
+    "refused": false,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 7.5465,
+        "chunk_id": "HC-4003-structured-004",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "text": "## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 2,
+        "score": 2.493,
+        "chunk_id": "HC-4004-structured-005",
+        "article_id": "HC-4004",
+        "source_file": "HC-4004-subscription-plan-mapping.md",
+        "product_area": "subscriptions",
+        "text": "## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 3,
+        "score": 2.3444,
+        "chunk_id": "HC-4003-structured-005",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5133 | The card is valid but the billing country on the card does not match the account tax country. | Correct the account tax country, or ask the customer to use a card issued in the account country. |\n| ERR-5140 | The payment method is a wallet token bound to a device that is no longer registered. | Ask the customer to pay once from the original device, or to add a normal card. |\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |",
+        "found_by": "keyword"
+      }
+    ],
+    "citations": [
+      {
+        "chunk_id": "HC-4003-structured-004",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "text": "## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |"
+      },
+      {
+        "chunk_id": "HC-4004-structured-005",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4004",
+        "source_file": "HC-4004-subscription-plan-mapping.md",
+        "text": "## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |"
+      }
+    ],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "I need to look up both error codes ERR-5108 and ERR-6203 to understand their causes and fixes.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "ERR-5108"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4003-structured-004>>>\nHelp-centre entry for ERR-5108:\n\n[HC-4003-structured-004] (article HC-4003)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "I have the fix for ERR-5108. Now I need to look up ERR-6203 to understand its cause and fix.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "ERR-6203"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4004-structured-005>>>\nHelp-centre entry for ERR-6203:\n\n[HC-4004-structured-005] (article HC-4004)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 3,
+        "thought": "Both error codes are now resolved. ERR-5108 requires the customer to re-enter their card once, and ERR-6203 requires removing users or choosing a higher seat count plan. I have all the facts needed to",
+        "tool": "finish",
+        "args": {
+          "answer": "For the declined renewal with ERR-5108: the saved card token was not re-tokenised during cutover, so the token reference points at a BL1 record that no longer resolves. Ask the customer to re-enter the card once; the new token is created automatically and the failed renewal retries within the hour [HC-4003-structured-004]. For the blocked plan change with ERR-6203: the target plan does not include enough seats for the account's current active users. Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued [HC-4004-structured-005]."
+        },
+        "observation": "For the declined renewal with ERR-5108: the saved card token was not re-tokenised during cutover, so the token reference points at a BL1 record that no longer resolves. Ask the customer to re-enter the card once; the new token is created automatically and the failed renewal retries within the hour [HC-4003-structured-004]. For the blocked plan change with ERR-6203: the target plan does not include enough seats for the account's current active users. Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued [HC-4004-structured-005].",
+        "ok": true
+      }
+    ],
+    "stop_reason": "finished",
+    "llm_calls": 3,
+    "elapsed_s": 33.96,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  },
+  "T03": {
+    "question": "A renewal failed and the subscription is showing past due. Which dunning attempt is that? Also their webhook endpoint was down for a few hours and they want to know if they lost the events.",
+    "answer": "A failed renewal that shows the subscription as past due corresponds to dunning attempt 4, which occurs 7 days after the first attempt and sends an email plus an in-app blocking modal, putting the subscription into the 'Past due' state [HC-4003-structured-003]. Regarding the webhook endpoint being down for a few hours: failed webhook deliveries are retried with exponential backoff over 24 hours at roughly 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours, and 24 hours, so a few hours of downtime should not cause events to be lost [HC-4006-structured-005].",
+    "refused": false,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 0.0328,
+        "chunk_id": "HC-4003-structured-003",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "last_updated": "2026-06-18",
+        "has_table_header": true,
+        "orphan_table_rows": false,
+        "char_len": 699,
+        "text": "## Dunning and retry schedule\n\nWhen a renewal payment fails, BL2 retries on a fixed schedule and then suspends\nthe subscription. The schedule replaced the legacy \"3 attempts over 10 days\" rule\nand is not configurable per account.\n\n| Attempt | When | Notification sent | Subscription state |\n|---|---|---|---|\n| 1 | Immediately on renewal | None | Active |\n| 2 | 24 hours after attempt 1 | Email to billing contact | Active |\n| 3 | 72 hours after attempt 1 | Email to billing contact and account owner | Active, banner shown in app |\n| 4 | 7 days after attempt 1 | Email plus in-app blocking modal | Past due |\n| Final | 14 days after attempt 1 | Suspension email | Suspended, data retained 60 days |",
+        "found_by": "both",
+        "dense_rank": 1,
+        "keyword_rank": 1,
+        "dense_score": 0.7419,
+        "keyword_score": 13.5959
+      },
+      {
+        "rank": 2,
+        "score": 0.0318,
+        "chunk_id": "HC-4006-structured-004",
+        "article_id": "HC-4006",
+        "source_file": "HC-4006-billing-api-and-webhooks.md",
+        "product_area": "api",
+        "last_updated": "2026-06-20",
+        "has_table_header": true,
+        "orphan_table_rows": false,
+        "char_len": 911,
+        "text": "## Webhook event renames\n\nEvery event moved to a `billing.` namespace. Old event names are no longer sent at\nall, so an endpoint listening for the old name goes quiet rather than erroring.\nThis is the single most common reason a customer reports \"webhooks stopped\nworking\" after migration.\n\n| v1 event name | v2 event name | Note |\n|---|---|---|\n| `invoice.created` | `billing.invoice.created` | Payload unchanged except for the `number` field. |\n| `invoice.payment_succeeded` | `billing.invoice.paid` | Renamed and reworded. Fires once, after ledger settlement, not on processor approval. |\n| `invoice.payment_failed` | `billing.invoice.payment_failed` | Now includes the dunning `attempt` number. |\n| `subscription.updated` | `billing.subscription.updated` | Fires for seat changes too, which v1 did not. |\n| `customer.balance_changed` | removed | No replacement. Derive from `billing.ledger.entry_created`. |",
+        "found_by": "both",
+        "dense_rank": 4,
+        "keyword_rank": 2,
+        "dense_score": 0.6511,
+        "keyword_score": 6.1384
+      },
+      {
+        "rank": 3,
+        "score": 0.0317,
+        "chunk_id": "HC-4004-structured-004",
+        "article_id": "HC-4004",
+        "source_file": "HC-4004-subscription-plan-mapping.md",
+        "product_area": "subscriptions",
+        "last_updated": "2026-05-29",
+        "has_table_header": false,
+        "orphan_table_rows": false,
+        "char_len": 477,
+        "text": "## Renewal failures\n\nA renewal that cannot be charged does not cancel the subscription. It moves the\nsubscription through the dunning schedule described in the payments article, then\nsuspends it. A suspended subscription keeps customer data for 60 days. After 60\ndays the data is deleted and cannot be restored, even if the customer pays.\n\nRenewal retries and payment retries are the same schedule. Agents sometimes assume\nsubscriptions have their own retry timer. They do not.",
+        "found_by": "both",
+        "dense_rank": 3,
+        "keyword_rank": 3,
+        "dense_score": 0.6887,
+        "keyword_score": 5.1243
+      },
+      {
+        "rank": 1,
+        "score": 0.0328,
+        "chunk_id": "HC-4006-structured-005",
+        "article_id": "HC-4006",
+        "source_file": "HC-4006-billing-api-and-webhooks.md",
+        "product_area": "api",
+        "last_updated": "2026-06-20",
+        "has_table_header": false,
+        "orphan_table_rows": false,
+        "char_len": 805,
+        "text": "## Webhook delivery and retries\n\nA webhook delivery that does not return a 2xx within 10 seconds is treated as\nfailed. Failed deliveries are retried with exponential backoff over 24 hours, at\nroughly 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours and 24 hours. After the\nfinal attempt the event is dropped and is not recoverable from the API.\n\nRetries are per endpoint, not per event. If an endpoint is failing, every event\nqueued for it backs off together. A customer who fixes their endpoint mid-backoff\nwill receive the queued events on the next scheduled attempt, not immediately.\n\nSignature verification did not change, but the signed payload now includes the\nevent name. Customers who verify signatures against a stored template must update\nthat template or every delivery will fail verification.",
+        "found_by": "both",
+        "dense_rank": 1,
+        "keyword_rank": 1,
+        "dense_score": 0.8188,
+        "keyword_score": 13.5314
+      },
+      {
+        "rank": 3,
+        "score": 0.0312,
+        "chunk_id": "HC-4006-structured-002",
+        "article_id": "HC-4006",
+        "source_file": "HC-4006-billing-api-and-webhooks.md",
+        "product_area": "api",
+        "last_updated": "2026-06-20",
+        "has_table_header": true,
+        "orphan_table_rows": false,
+        "char_len": 901,
+        "text": "## Endpoint mapping\n\n| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/invoices` | `GET /v2/billing/invoices` | Pagination is cursor-based. The `page` parameter is ignored and returns the first page silently. |\n| `GET /v1/invoices/{id}` | `GET /v2/billing/invoices/{id}` | The `number` field now includes a revision suffix on reissued invoices. |\n| `POST /v1/invoices/{id}/pay` | `POST /v2/billing/invoices/{id}/payments` | Returns 202 and settles asynchronously. Callers that assumed a synchronous 200 will misreport failures. |\n| `GET /v1/subscriptions` | `GET /v2/billing/subscriptions` | The `plan` field returns the new capability-tier name, not the legacy seat-count name. |\n| `POST /v1/subscriptions/{id}/cancel` | `POST /v2/billing/subscriptions/{id}/cancellations` | Cancellation is now scheduled at period end by default. Pass `immediate=true` for the old behaviour. |",
+        "found_by": "both",
+        "dense_rank": 4,
+        "keyword_rank": 4,
+        "dense_score": 0.6463,
+        "keyword_score": 3.2523
+      }
+    ],
+    "citations": [
+      {
+        "chunk_id": "HC-4003-structured-003",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "text": "## Dunning and retry schedule\n\nWhen a renewal payment fails, BL2 retries on a fixed schedule and then suspends\nthe subscription. The schedule replaced the legacy \"3 attempts over 10 days\" rule\nand is not configurable per account.\n\n| Attempt | When | Notification sent | Subscription state |\n|---|---|---|---|\n| 1 | Immediately on renewal | None | Active |\n| 2 | 24 hours after attempt 1 | Email to billing contact | Active |\n| 3 | 72 hours after attempt 1 | Email to billing contact and account owner | Active, banner shown in app |\n| 4 | 7 days after attempt 1 | Email plus in-app blocking modal | Past due |\n| Final | 14 days after attempt 1 | Suspension email | Suspended, data retained 60 days |"
+      },
+      {
+        "chunk_id": "HC-4006-structured-005",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4006",
+        "source_file": "HC-4006-billing-api-and-webhooks.md",
+        "text": "## Webhook delivery and retries\n\nA webhook delivery that does not return a 2xx within 10 seconds is treated as\nfailed. Failed deliveries are retried with exponential backoff over 24 hours, at\nroughly 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours and 24 hours. After the\nfinal attempt the event is dropped and is not recoverable from the API.\n\nRetries are per endpoint, not per event. If an endpoint is failing, every event\nqueued for it backs off together. A customer who fixes their endpoint mid-backoff\nwill receive the queued events on the next scheduled attempt, not immediately.\n\nSignature verification did not change, but the signed payload now includes the\nevent name. Customers who verify signatures against a stored template must update\nthat template or every delivery will fail verification."
+      }
+    ],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "The ticket has two parts: (1) identifying which dunning attempt corresponds to a failed renewal with past due status, and (2) determining if webhook events were lost when the endpoint was down. I'll s",
+        "tool": "search_help_centre",
+        "args": {
+          "query": "dunning attempt past due renewal failed"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4003-structured-003>>>\nTop 3 results for \"dunning attempt past due renewal failed\":\n\n[HC-4003-structured-003] (article HC-4003)\n## Dunning and retry schedule\n\nWhen a renewal payment fails, BL2 retries on a fixed schedule and then suspends\nthe subscription. The schedule replaced the legacy \"3 attempts over 10 days\" rule\nand is not configurable per account.\n\n| Attempt | When | Notification sent | Subscription state |\n|---|---|---|---|\n| 1 | Immediately on renewal | None | Active |\n| 2 | 24 hours after attempt 1 | Email to billing contact | Active |\n| 3 | 72 hours after attempt 1 | Email to billing contact and account owner | Active, banner shown in app |\n| 4 | 7 days after attempt 1 | Email plus in-app blocking modal | Past due |\n| Final | 14 days after attempt 1 | Suspension email | Suspended, data retained 60 days |\n\n[HC-4006-structured-004] (article HC-4006)\n## Webhook event renames\n\nEvery event moved to a `billing.` namespace. Old event names are no longer sent at\nall, so an endpoint listening for the old name goes quiet rather than erroring.\nThis is the single most common reason a customer reports \"webhooks stopped\nworking\" after migration.\n\n| v1 event name | v2 event name | Note |\n|---|---|---|\n| `invoice.created` | `billing.invoice.created` | Payload unchanged except for the `number` field. |\n| `invoice.payment_succeeded` | `billing.invoice.paid` | Renamed and reworded. Fires once, after ledger settlement, not on processor approval. |\n| `invoice.payment_failed` | `billing.invoice.payment_failed` | Now includes the dunning `attempt` number. |\n| `subscription.updated` | `billing.subscription.updated` | Fires for seat changes too, which v1 did not. |\n| `customer.balance_changed` | removed | No replacement. Derive from `billing.ledger.entry_\n... [11 more characters]\n\n[HC-4004-structured-004] (article HC-4004)\n## Renewal failures\n\nA renewal that cannot be charged does not cancel the subscription. It moves the\nsubscription through the dunning schedule described in the payments article, then\nsuspends it. A suspended subscription keeps customer data for 60 days. After 60\ndays the data is deleted and cannot be restored, even if the customer pays.\n\nRenewal retries and payment retries are the same schedule. Agents sometimes assume\nsubscriptions have their own retry timer. They do not.\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "I have the dunning schedule for the first part. Now I need to find information about whether webhook events are lost when an endpoint is down for a few hours.",
+        "tool": "search_help_centre",
+        "args": {
+          "query": "webhook endpoint down events lost retry delivery"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4006-structured-005>>>\nTop 3 results for \"webhook endpoint down events lost retry delivery\":\n\n[HC-4006-structured-005] (article HC-4006)\n## Webhook delivery and retries\n\nA webhook delivery that does not return a 2xx within 10 seconds is treated as\nfailed. Failed deliveries are retried with exponential backoff over 24 hours, at\nroughly 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours and 24 hours. After the\nfinal attempt the event is dropped and is not recoverable from the API.\n\nRetries are per endpoint, not per event. If an endpoint is failing, every event\nqueued for it backs off together. A customer who fixes their endpoint mid-backoff\nwill receive the queued events on the next scheduled attempt, not immediately.\n\nSignature verification did not change, but the signed payload now includes the\nevent name. Customers who verify signatures against a stored template must update\nthat template or every delivery will fail verification.\n\n[HC-4006-structured-004] (article HC-4006)\n## Webhook event renames\n\nEvery event moved to a `billing.` namespace. Old event names are no longer sent at\nall, so an endpoint listening for the old name goes quiet rather than erroring.\nThis is the single most common reason a customer reports \"webhooks stopped\nworking\" after migration.\n\n| v1 event name | v2 event name | Note |\n|---|---|---|\n| `invoice.created` | `billing.invoice.created` | Payload unchanged except for the `number` field. |\n| `invoice.payment_succeeded` | `billing.invoice.paid` | Renamed and reworded. Fires once, after ledger settlement, not on processor approval. |\n| `invoice.payment_failed` | `billing.invoice.payment_failed` | Now includes the dunning `attempt` number. |\n| `subscription.updated` | `billing.subscription.updated` | Fires for seat changes too, which v1 did not. |\n| `customer.balance_changed` | removed | No replacement. Derive from `billing.ledger.entry_\n... [11 more characters]\n\n[HC-4006-structured-002] (article HC-4006)\n## Endpoint mapping\n\n| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/invoices` | `GET /v2/billing/invoices` | Pagination is cursor-based. The `page` parameter is ignored and returns the first page silently. |\n| `GET /v1/invoices/{id}` | `GET /v2/billing/invoices/{id}` | The `number` field now includes a revision suffix on reissued invoices. |\n| `POST /v1/invoices/{id}/pay` | `POST /v2/billing/invoices/{id}/payments` | Returns 202 and settles asynchronously. Callers that assumed a synchronous 200 will misreport failures. |\n| `GET /v1/subscriptions` | `GET /v2/billing/subscriptions` | The `plan` field returns the new capability-tier name, not the legacy seat-count name. |\n| `POST /v1/subscriptions/{id}/cancel` | `POST /v2/billing/subscriptions/{id}/cancellations` | Cancellation is now scheduled at period end by default. Pass `immediate=true` for the old behaviour.\n... [1 more characters]\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 3,
+        "thought": "I have both answers: the dunning attempt for past due status is attempt 4, and webhook events are retried with exponential backoff over 24 hours, so a few hours of downtime should not result in lost e",
+        "tool": "finish",
+        "args": {
+          "answer": "A failed renewal that shows the subscription as past due corresponds to dunning attempt 4, which occurs 7 days after the first attempt and sends an email plus an in-app blocking modal, putting the subscription into the 'Past due' state [HC-4003-structured-003]. Regarding the webhook endpoint being down for a few hours: failed webhook deliveries are retried with exponential backoff over 24 hours at roughly 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours, and 24 hours, so a few hours of downtime should not cause events to be lost [HC-4006-structured-005]."
+        },
+        "observation": "A failed renewal that shows the subscription as past due corresponds to dunning attempt 4, which occurs 7 days after the first attempt and sends an email plus an in-app blocking modal, putting the subscription into the 'Past due' state [HC-4003-structured-003]. Regarding the webhook endpoint being down for a few hours: failed webhook deliveries are retried with exponential backoff over 24 hours at roughly 1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours, and 24 hours, so a few hours of downtime should not cause events to be lost [HC-4006-structured-005].",
+        "ok": true
+      }
+    ],
+    "stop_reason": "finished",
+    "llm_calls": 3,
+    "elapsed_s": 26.58,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  },
+  "T04": {
+    "question": "Account badge says MIG-220 and I am not sure what to do with it. The same customer is also asking for an extension on the v1 API sunset because they will not be ready in time.",
+    "answer": "For the MIG-220 badge: this means invoices moved but at least one credit note failed to import. The correct action is to open a Billing Ops ticket with the account ID and not reissue invoices yourself [HC-4001-structured-005]. For the v1 API sunset extension request: the v1 endpoints stop responding on 30 September 2026, there is no extension process, and customers asking for one should be routed to their account manager rather than told no by an agent [HC-4006-structured-001].",
+    "refused": false,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 10.9366,
+        "chunk_id": "HC-4001-structured-005",
+        "article_id": "HC-4001",
+        "source_file": "HC-4001-billing-migration-overview.md",
+        "product_area": "billing_core",
+        "text": "| Code | Badge text | Meaning | Agent action |\n|---|---|---|---|\n| MIG-100 | Migrated | The account moved cleanly. Balances match to the cent. | None. Treat the account as normal. |\n| MIG-140 | Migrated with rounding | Balance differs from BL1 by less than 0.05 in account currency. The difference was written off automatically. | None. Explain the write-off if the customer asks. |\n| MIG-220 | Partial | Invoices moved but at least one credit note failed to import. | Open a Billing Ops ticket with the account ID. Do not reissue invoices yourself. |\n| MIG-310 | Deferred | The account was skipped because a payment was in flight at cutover. It is retried nightly. | Wait one night. Escalate only if the badge is unchanged after 48 hours. |\n| MIG-450 | Blocked | The account has a legacy contract term that BL2 cannot represent. | Escalate to Billing Ops immediately. These accounts cannot self-serve any plan change. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 1,
+        "score": 0.0328,
+        "chunk_id": "HC-4006-structured-001",
+        "article_id": "HC-4006",
+        "source_file": "HC-4006-billing-api-and-webhooks.md",
+        "product_area": "api",
+        "last_updated": "2026-06-20",
+        "has_table_header": false,
+        "orphan_table_rows": false,
+        "char_len": 748,
+        "text": "# Billing API and Webhook Changes\n\n## Versioning and sunset\n\nThe billing API moved from v1 to v2 at cutover. Both versions answer today. The v1\nendpoints stop responding on 30 September 2026. After that date a v1 request\nreturns HTTP 410 with no body. There is no extension process, and customers who\nask for one should be routed to their account manager rather than told no by an\nagent.\n\nThe v2 API is not a superset of v1. Three v1 endpoints have no v2 equivalent at\nall, because the underlying concept no longer exists. Those are listed below as\n\"removed\". Customers relying on them need a code change, not a URL change.\n\nAuthentication did not change. The same API keys work against both versions. Keys\nissued before migration were not rotated.",
+        "found_by": "both",
+        "dense_rank": 1,
+        "keyword_rank": 1,
+        "dense_score": 0.7168,
+        "keyword_score": 15.4411
+      },
+      {
+        "rank": 2,
+        "score": 0.032,
+        "chunk_id": "HC-4006-structured-002",
+        "article_id": "HC-4006",
+        "source_file": "HC-4006-billing-api-and-webhooks.md",
+        "product_area": "api",
+        "last_updated": "2026-06-20",
+        "has_table_header": true,
+        "orphan_table_rows": false,
+        "char_len": 901,
+        "text": "## Endpoint mapping\n\n| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/invoices` | `GET /v2/billing/invoices` | Pagination is cursor-based. The `page` parameter is ignored and returns the first page silently. |\n| `GET /v1/invoices/{id}` | `GET /v2/billing/invoices/{id}` | The `number` field now includes a revision suffix on reissued invoices. |\n| `POST /v1/invoices/{id}/pay` | `POST /v2/billing/invoices/{id}/payments` | Returns 202 and settles asynchronously. Callers that assumed a synchronous 200 will misreport failures. |\n| `GET /v1/subscriptions` | `GET /v2/billing/subscriptions` | The `plan` field returns the new capability-tier name, not the legacy seat-count name. |\n| `POST /v1/subscriptions/{id}/cancel` | `POST /v2/billing/subscriptions/{id}/cancellations` | Cancellation is now scheduled at period end by default. Pass `immediate=true` for the old behaviour. |",
+        "found_by": "both",
+        "dense_rank": 2,
+        "keyword_rank": 3,
+        "dense_score": 0.5993,
+        "keyword_score": 3.9803
+      },
+      {
+        "rank": 3,
+        "score": 0.032,
+        "chunk_id": "HC-4006-structured-003",
+        "article_id": "HC-4006",
+        "source_file": "HC-4006-billing-api-and-webhooks.md",
+        "product_area": "api",
+        "last_updated": "2026-06-20",
+        "has_table_header": true,
+        "orphan_table_rows": false,
+        "char_len": 404,
+        "text": "| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/customers/{id}/balance` | removed | Balance is derived from the ledger. Use `GET /v2/billing/ledger/entries` and sum the open entries. |\n| `POST /v1/credits` | removed | Credit notes are created through the invoice, not directly. |\n| `GET /v1/plans` | removed | Plans are now a catalogue object. Use `GET /v2/catalogue/products`. |",
+        "found_by": "both",
+        "dense_rank": 3,
+        "keyword_rank": 2,
+        "dense_score": 0.5983,
+        "keyword_score": 4.1163
+      }
+    ],
+    "citations": [
+      {
+        "chunk_id": "HC-4001-structured-005",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4001",
+        "source_file": "HC-4001-billing-migration-overview.md",
+        "text": "| Code | Badge text | Meaning | Agent action |\n|---|---|---|---|\n| MIG-100 | Migrated | The account moved cleanly. Balances match to the cent. | None. Treat the account as normal. |\n| MIG-140 | Migrated with rounding | Balance differs from BL1 by less than 0.05 in account currency. The difference was written off automatically. | None. Explain the write-off if the customer asks. |\n| MIG-220 | Partial | Invoices moved but at least one credit note failed to import. | Open a Billing Ops ticket with the account ID. Do not reissue invoices yourself. |\n| MIG-310 | Deferred | The account was skipped because a payment was in flight at cutover. It is retried nightly. | Wait one night. Escalate only if the badge is unchanged after 48 hours. |\n| MIG-450 | Blocked | The account has a legacy contract term that BL2 cannot represent. | Escalate to Billing Ops immediately. These accounts cannot self-serve any plan change. |"
+      },
+      {
+        "chunk_id": "HC-4006-structured-001",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4006",
+        "source_file": "HC-4006-billing-api-and-webhooks.md",
+        "text": "# Billing API and Webhook Changes\n\n## Versioning and sunset\n\nThe billing API moved from v1 to v2 at cutover. Both versions answer today. The v1\nendpoints stop responding on 30 September 2026. After that date a v1 request\nreturns HTTP 410 with no body. There is no extension process, and customers who\nask for one should be routed to their account manager rather than told no by an\nagent.\n\nThe v2 API is not a superset of v1. Three v1 endpoints have no v2 equivalent at\nall, because the underlying concept no longer exists. Those are listed below as\n\"removed\". Customers relying on them need a code change, not a URL change.\n\nAuthentication did not change. The same API keys work against both versions. Keys\nissued before migration were not rotated."
+      }
+    ],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "The ticket has two parts: an error code MIG-220 and a request for a v1 API sunset extension. I'll look up the error code first since it's exact.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "MIG-220"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4001-structured-005>>>\nHelp-centre entry for MIG-220:\n\n[HC-4001-structured-005] (article HC-4001)\n| Code | Badge text | Meaning | Agent action |\n|---|---|---|---|\n| MIG-220 | Partial | Invoices moved but at least one credit note failed to import. | Open a Billing Ops ticket with the account ID. Do not reissue invoices yourself. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "I've resolved the MIG-220 error code. Now I need to look up the v1 API sunset extension request, which is a policy question best handled with a worded search.",
+        "tool": "search_help_centre",
+        "args": {
+          "query": "v1 API sunset extension request"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4006-structured-001>>>\nTop 3 results for \"v1 API sunset extension request\":\n\n[HC-4006-structured-001] (article HC-4006)\n# Billing API and Webhook Changes\n\n## Versioning and sunset\n\nThe billing API moved from v1 to v2 at cutover. Both versions answer today. The v1\nendpoints stop responding on 30 September 2026. After that date a v1 request\nreturns HTTP 410 with no body. There is no extension process, and customers who\nask for one should be routed to their account manager rather than told no by an\nagent.\n\nThe v2 API is not a superset of v1. Three v1 endpoints have no v2 equivalent at\nall, because the underlying concept no longer exists. Those are listed below as\n\"removed\". Customers relying on them need a code change, not a URL change.\n\nAuthentication did not change. The same API keys work against both versions. Keys\nissued before migration were not rotated.\n\n[HC-4006-structured-002] (article HC-4006)\n## Endpoint mapping\n\n| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/invoices` | `GET /v2/billing/invoices` | Pagination is cursor-based. The `page` parameter is ignored and returns the first page silently. |\n| `GET /v1/invoices/{id}` | `GET /v2/billing/invoices/{id}` | The `number` field now includes a revision suffix on reissued invoices. |\n| `POST /v1/invoices/{id}/pay` | `POST /v2/billing/invoices/{id}/payments` | Returns 202 and settles asynchronously. Callers that assumed a synchronous 200 will misreport failures. |\n| `GET /v1/subscriptions` | `GET /v2/billing/subscriptions` | The `plan` field returns the new capability-tier name, not the legacy seat-count name. |\n| `POST /v1/subscriptions/{id}/cancel` | `POST /v2/billing/subscriptions/{id}/cancellations` | Cancellation is now scheduled at period end by default. Pass `immediate=true` for the old behaviour.\n... [1 more characters]\n\n[HC-4006-structured-003] (article HC-4006)\n| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/customers/{id}/balance` | removed | Balance is derived from the ledger. Use `GET /v2/billing/ledger/entries` and sum the open entries. |\n| `POST /v1/credits` | removed | Credit notes are created through the invoice, not directly. |\n| `GET /v1/plans` | removed | Plans are now a catalogue object. Use `GET /v2/catalogue/products`. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 3,
+        "thought": "Both parts of the ticket are now resolved: MIG-220 requires opening a Billing Ops ticket with the account ID, and the v1 API sunset has no extension process and should be routed to the account manager",
+        "tool": "finish",
+        "args": {
+          "answer": "For the MIG-220 badge: this means invoices moved but at least one credit note failed to import. The correct action is to open a Billing Ops ticket with the account ID and not reissue invoices yourself [HC-4001-structured-005]. For the v1 API sunset extension request: the v1 endpoints stop responding on 30 September 2026, there is no extension process, and customers asking for one should be routed to their account manager rather than told no by an agent [HC-4006-structured-001]."
+        },
+        "observation": "For the MIG-220 badge: this means invoices moved but at least one credit note failed to import. The correct action is to open a Billing Ops ticket with the account ID and not reissue invoices yourself [HC-4001-structured-005]. For the v1 API sunset extension request: the v1 endpoints stop responding on 30 September 2026, there is no extension process, and customers asking for one should be routed to their account manager rather than told no by an agent [HC-4006-structured-001].",
+        "ok": true
+      }
+    ],
+    "stop_reason": "finished",
+    "llm_calls": 3,
+    "elapsed_s": 41.97,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  },
+  "T05": {
+    "question": "Messy one. Tax is failing with ERR-7208, a payment is stuck on ERR-5199, and the customer is asking me to void an invoice they have already paid. Three things, what is the right action on each?",
+    "answer": "For the three issues in your ticket: ERR-7208 (tax failing) is a temporary VIES outage on the tax authority side, not a customer problem. The fix is to retry after one hour and do not remove the customer's VAT ID; invoices finalise with the last known good status [HC-4005-structured-003]. ERR-5199 (payment stuck) means the processor rejected the request because the account is flagged for manual review. Do not retry, as retrying while flagged extends the review window; instead escalate to Payments Ops [HC-4003-structured-005]. For voiding an invoice the customer has already paid: never void a paid invoice, even if it shows an error code, because this creates an orphaned payment that must be repaired by hand in the ledger. The correct route is always a Billing Ops ticket [HC-4002-structured-007].",
+    "refused": false,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 7.1042,
+        "chunk_id": "HC-4005-structured-003",
+        "article_id": "HC-4005",
+        "source_file": "HC-4005-tax-and-vat.md",
+        "product_area": "tax",
+        "text": "## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 2,
+        "score": 2.493,
+        "chunk_id": "HC-4004-structured-005",
+        "article_id": "HC-4004",
+        "source_file": "HC-4004-subscription-plan-mapping.md",
+        "product_area": "subscriptions",
+        "text": "## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 3,
+        "score": 2.3474,
+        "chunk_id": "HC-4003-structured-004",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "text": "## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 1,
+        "score": 8.5753,
+        "chunk_id": "HC-4003-structured-005",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5133 | The card is valid but the billing country on the card does not match the account tax country. | Correct the account tax country, or ask the customer to use a card issued in the account country. |\n| ERR-5140 | The payment method is a wallet token bound to a device that is no longer registered. | Ask the customer to pay once from the original device, or to add a normal card. |\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 1,
+        "score": 0.0328,
+        "chunk_id": "HC-4002-structured-007",
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "product_area": "invoicing",
+        "last_updated": "2026-06-11",
+        "has_table_header": false,
+        "orphan_table_rows": false,
+        "char_len": 498,
+        "text": "## What agents must not do\n\nNever void an invoice that a customer has already paid, even if it shows an error\ncode. Voiding a paid invoice creates an orphaned payment that has to be repaired\nby hand in the ledger. If the invoice is paid and shows an error, the correct\nroute is always a Billing Ops ticket.\n\nNever edit tax codes on a historical invoice to \"make the total match\". The tax\ncode drives the ledger entry, and changing it after payment causes the account to\ndrift out of reconciliation.",
+        "found_by": "both",
+        "dense_rank": 1,
+        "keyword_rank": 1,
+        "dense_score": 0.7669,
+        "keyword_score": 9.6133
+      },
+      {
+        "rank": 2,
+        "score": 0.0323,
+        "chunk_id": "HC-4002-structured-005",
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "product_area": "invoicing",
+        "last_updated": "2026-06-11",
+        "has_table_header": true,
+        "orphan_table_rows": false,
+        "char_len": 761,
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4044 | The invoice total is negative because an imported credit note exceeded the invoice value. | Convert the remainder to account credit using Apply as Credit. Do not issue a refund for the difference. |\n| ERR-4055 | The billing period on the invoice overlaps a period that is already invoiced and paid. | Void the newer invoice. The paid invoice is the correct one. Confirm the customer has not been charged twice before closing the ticket. |\n| ERR-4061 | The invoice currency does not match the account currency. Caused by a mid-cycle currency change in the legacy system. | Escalate to Billing Ops. Agents cannot change invoice currency, and editing the account currency will not fix the existing invoice. |",
+        "found_by": "both",
+        "dense_rank": 2,
+        "keyword_rank": 2,
+        "dense_score": 0.6919,
+        "keyword_score": 8.2498
+      },
+      {
+        "rank": 3,
+        "score": 0.0313,
+        "chunk_id": "HC-4002-structured-006",
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "product_area": "invoicing",
+        "last_updated": "2026-06-11",
+        "has_table_header": true,
+        "orphan_table_rows": false,
+        "char_len": 519,
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4077 | PDF rendering failed because a line item description contains an unsupported control character. | Edit the line item description to remove the character, then click Regenerate PDF. The invoice itself is valid and payable meanwhile. |\n| ERR-4090 | The invoice was finalised while the ledger was read-only during Phase 3 cutover. It has no ledger entry. | Do not void it. Open a Billing Ops ticket quoting the invoice number so the ledger entry can be backfilled. |",
+        "found_by": "both",
+        "dense_rank": 5,
+        "keyword_rank": 3,
+        "dense_score": 0.6701,
+        "keyword_score": 3.1969
+      }
+    ],
+    "citations": [
+      {
+        "chunk_id": "HC-4005-structured-003",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4005",
+        "source_file": "HC-4005-tax-and-vat.md",
+        "text": "## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |"
+      },
+      {
+        "chunk_id": "HC-4003-structured-005",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5133 | The card is valid but the billing country on the card does not match the account tax country. | Correct the account tax country, or ask the customer to use a card issued in the account country. |\n| ERR-5140 | The payment method is a wallet token bound to a device that is no longer registered. | Ask the customer to pay once from the original device, or to add a normal card. |\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |"
+      },
+      {
+        "chunk_id": "HC-4002-structured-007",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "text": "## What agents must not do\n\nNever void an invoice that a customer has already paid, even if it shows an error\ncode. Voiding a paid invoice creates an orphaned payment that has to be repaired\nby hand in the ledger. If the invoice is paid and shows an error, the correct\nroute is always a Billing Ops ticket.\n\nNever edit tax codes on a historical invoice to \"make the total match\". The tax\ncode drives the ledger entry, and changing it after payment causes the account to\ndrift out of reconciliation."
+      }
+    ],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "Three separate issues to resolve: ERR-7208 tax error, ERR-5199 payment error, and voiding a paid invoice. Starting with the first error code lookup.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "ERR-7208"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4005-structured-003>>>\nHelp-centre entry for ERR-7208:\n\n[HC-4005-structured-003] (article HC-4005)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "ERR-7208 is resolved. Now I need to look up the second error code ERR-5199 for the payment issue.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "ERR-5199"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4003-structured-005>>>\nHelp-centre entry for ERR-5199:\n\n[HC-4003-structured-005] (article HC-4003)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 3,
+        "thought": "Two error codes resolved. Now I need to look up the policy on voiding an invoice that has already been paid.",
+        "tool": "search_help_centre",
+        "args": {
+          "query": "void invoice already paid"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4002-structured-007>>>\nTop 3 results for \"void invoice already paid\":\n\n[HC-4002-structured-007] (article HC-4002)\n## What agents must not do\n\nNever void an invoice that a customer has already paid, even if it shows an error\ncode. Voiding a paid invoice creates an orphaned payment that has to be repaired\nby hand in the ledger. If the invoice is paid and shows an error, the correct\nroute is always a Billing Ops ticket.\n\nNever edit tax codes on a historical invoice to \"make the total match\". The tax\ncode drives the ledger entry, and changing it after payment causes the account to\ndrift out of reconciliation.\n\n[HC-4002-structured-005] (article HC-4002)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4044 | The invoice total is negative because an imported credit note exceeded the invoice value. | Convert the remainder to account credit using Apply as Credit. Do not issue a refund for the difference. |\n| ERR-4055 | The billing period on the invoice overlaps a period that is already invoiced and paid. | Void the newer invoice. The paid invoice is the correct one. Confirm the customer has not been charged twice before closing the ticket. |\n| ERR-4061 | The invoice currency does not match the account currency. Caused by a mid-cycle currency change in the legacy system. | Escalate to Billing Ops. Agents cannot change invoice currency, and editing the account currency will not fix the existing invoice. |\n\n[HC-4002-structured-006] (article HC-4002)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4077 | PDF rendering failed because a line item description contains an unsupported control character. | Edit the line item description to remove the character, then click Regenerate PDF. The invoice itself is valid and payable meanwhile. |\n| ERR-4090 | The invoice was finalised while the ledger was read-only during Phase 3 cutover. It has no ledger entry. | Do not void it. Open a Billing Ops ticket quoting the invoice number so the ledger entry can be backfilled. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 4,
+        "thought": "All three issues are now resolved: ERR-7208 (retry after one hour, don't remove VAT ID), ERR-5199 (don't retry, escalate to Payments Ops), and voiding a paid invoice (never void, open a Billing Ops ti",
+        "tool": "finish",
+        "args": {
+          "answer": "For the three issues in your ticket: ERR-7208 (tax failing) is a temporary VIES outage on the tax authority side, not a customer problem. The fix is to retry after one hour and do not remove the customer's VAT ID; invoices finalise with the last known good status [HC-4005-structured-003]. ERR-5199 (payment stuck) means the processor rejected the request because the account is flagged for manual review. Do not retry, as retrying while flagged extends the review window; instead escalate to Payments Ops [HC-4003-structured-005]. For voiding an invoice the customer has already paid: never void a paid invoice, even if it shows an error code, because this creates an orphaned payment that must be repaired by hand in the ledger. The correct route is always a Billing Ops ticket [HC-4002-structured-007]."
+        },
+        "observation": "For the three issues in your ticket: ERR-7208 (tax failing) is a temporary VIES outage on the tax authority side, not a customer problem. The fix is to retry after one hour and do not remove the customer's VAT ID; invoices finalise with the last known good status [HC-4005-structured-003]. ERR-5199 (payment stuck) means the processor rejected the request because the account is flagged for manual review. Do not retry, as retrying while flagged extends the review window; instead escalate to Payments Ops [HC-4003-structured-005]. For voiding an invoice the customer has already paid: never void a paid invoice, even if it shows an error code, because this creates an orphaned payment that must be repaired by hand in the ledger. The correct route is always a Billing Ops ticket [HC-4002-structured-007].",
+        "ok": true
+      }
+    ],
+    "stop_reason": "finished",
+    "llm_calls": 4,
+    "elapsed_s": 28.79,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  },
+  "T01": {
+    "question": "Two separate problems on one account. An invoice line is throwing ERR-4032, and separately the customer's VAT ID stopped validating with ERR-7215. What do I do about each?",
+    "answer": "For the invoice line throwing ERR-4032: the line item references a legacy tax code that no longer exists in BL2 and could not be mapped automatically during migration. To fix it, re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. [HC-4002-structured-004] For the VAT ID that stopped validating with ERR-7215: the customer name on the account does not match the name registered against the VAT ID. To fix it, update the legal entity name on the account to match the registration exactly, then revalidate. [HC-4005-structured-003]",
+    "refused": false,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 7.9301,
+        "chunk_id": "HC-4002-structured-004",
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "product_area": "invoicing",
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4010 | The invoice references a customer address that failed validation during import. Most often a missing postal code. | Open Billing then Customer Details, complete the address, then click Revalidate. The invoice finalises on the next hourly run. |\n| ERR-4021 | Two line items on the same invoice resolve to the same metered usage record. This happens on accounts that had overlapping legacy subscriptions. | Void the invoice, then run Rebuild Usage for the period. Never delete the usage record directly. |\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 2,
+        "score": 2.493,
+        "chunk_id": "HC-4004-structured-005",
+        "article_id": "HC-4004",
+        "source_file": "HC-4004-subscription-plan-mapping.md",
+        "product_area": "subscriptions",
+        "text": "## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 3,
+        "score": 2.3474,
+        "chunk_id": "HC-4003-structured-004",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "text": "## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 1,
+        "score": 7.1042,
+        "chunk_id": "HC-4005-structured-003",
+        "article_id": "HC-4005",
+        "source_file": "HC-4005-tax-and-vat.md",
+        "product_area": "tax",
+        "text": "## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |",
+        "found_by": "keyword"
+      }
+    ],
+    "citations": [
+      {
+        "chunk_id": "HC-4002-structured-004",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4010 | The invoice references a customer address that failed validation during import. Most often a missing postal code. | Open Billing then Customer Details, complete the address, then click Revalidate. The invoice finalises on the next hourly run. |\n| ERR-4021 | Two line items on the same invoice resolve to the same metered usage record. This happens on accounts that had overlapping legacy subscriptions. | Void the invoice, then run Rebuild Usage for the period. Never delete the usage record directly. |\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |"
+      },
+      {
+        "chunk_id": "HC-4005-structured-003",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4005",
+        "source_file": "HC-4005-tax-and-vat.md",
+        "text": "## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |"
+      }
+    ],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "The ticket has two distinct error codes: ERR-4032 and ERR-7215. I'll look up each one separately using the exact error code lookup tool.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "ERR-4032"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4002-structured-004>>>\nHelp-centre entry for ERR-4032:\n\n[HC-4002-structured-004] (article HC-4002)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "ERR-4032 is resolved. Now I need to look up the second error code ERR-7215 to address the VAT ID validation issue.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "ERR-7215"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4005-structured-003>>>\nHelp-centre entry for ERR-7215:\n\n[HC-4005-structured-003] (article HC-4005)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 3,
+        "thought": "Both error codes have been looked up and I have the cause and fix for each. I can now provide the final answer covering both problems.",
+        "tool": "finish",
+        "args": {
+          "answer": "For the invoice line throwing ERR-4032: the line item references a legacy tax code that no longer exists in BL2 and could not be mapped automatically during migration. To fix it, re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. [HC-4002-structured-004] For the VAT ID that stopped validating with ERR-7215: the customer name on the account does not match the name registered against the VAT ID. To fix it, update the legal entity name on the account to match the registration exactly, then revalidate. [HC-4005-structured-003]"
+        },
+        "observation": "For the invoice line throwing ERR-4032: the line item references a legacy tax code that no longer exists in BL2 and could not be mapped automatically during migration. To fix it, re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. [HC-4002-structured-004] For the VAT ID that stopped validating with ERR-7215: the customer name on the account does not match the name registered against the VAT ID. To fix it, update the legal entity name on the account to match the registration exactly, then revalidate. [HC-4005-structured-003]",
+        "ok": true
+      }
+    ],
+    "stop_reason": "finished",
+    "llm_calls": 3,
+    "elapsed_s": 34.48,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  },
+  "T07": {
+    "question": "Getting ERR-4032 on an invoice line. What is the fix?",
+    "answer": "ERR-4032 occurs because the invoice line item references a legacy tax code that no longer exists in BL2, and the migration could not map it automatically. To fix it, re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. [HC-4002-structured-004]",
+    "refused": false,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 7.9301,
+        "chunk_id": "HC-4002-structured-004",
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "product_area": "invoicing",
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4010 | The invoice references a customer address that failed validation during import. Most often a missing postal code. | Open Billing then Customer Details, complete the address, then click Revalidate. The invoice finalises on the next hourly run. |\n| ERR-4021 | Two line items on the same invoice resolve to the same metered usage record. This happens on accounts that had overlapping legacy subscriptions. | Void the invoice, then run Rebuild Usage for the period. Never delete the usage record directly. |\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 2,
+        "score": 2.493,
+        "chunk_id": "HC-4004-structured-005",
+        "article_id": "HC-4004",
+        "source_file": "HC-4004-subscription-plan-mapping.md",
+        "product_area": "subscriptions",
+        "text": "## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 3,
+        "score": 2.3474,
+        "chunk_id": "HC-4003-structured-004",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "text": "## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |",
+        "found_by": "keyword"
+      }
+    ],
+    "citations": [
+      {
+        "chunk_id": "HC-4002-structured-004",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4010 | The invoice references a customer address that failed validation during import. Most often a missing postal code. | Open Billing then Customer Details, complete the address, then click Revalidate. The invoice finalises on the next hourly run. |\n| ERR-4021 | Two line items on the same invoice resolve to the same metered usage record. This happens on accounts that had overlapping legacy subscriptions. | Void the invoice, then run Rebuild Usage for the period. Never delete the usage record directly. |\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |"
+      }
+    ],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "The ticket asks about error code ERR-4032 on an invoice line. I need to look up this exact error code to find its cause and fix.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "ERR-4032"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4002-structured-004>>>\nHelp-centre entry for ERR-4032:\n\n[HC-4002-structured-004] (article HC-4002)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "I have the exact cause and fix for ERR-4032 from the help centre. The error is due to a legacy tax code that no longer exists in BL2, and the fix is to re-map the line item to a current tax code under",
+        "tool": "finish",
+        "args": {
+          "answer": "ERR-4032 occurs because the invoice line item references a legacy tax code that no longer exists in BL2, and the migration could not map it automatically. To fix it, re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. [HC-4002-structured-004]"
+        },
+        "observation": "ERR-4032 occurs because the invoice line item references a legacy tax code that no longer exists in BL2, and the migration could not map it automatically. To fix it, re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. [HC-4002-structured-004]",
+        "ok": true
+      }
+    ],
+    "stop_reason": "finished",
+    "llm_calls": 2,
+    "elapsed_s": 27.14,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  },
+  "T08": {
+    "question": "ERR-5114 insufficient funds. Do we retry it?",
+    "answer": "ERR-5114 indicates insufficient funds returned verbatim by the issuer. According to the help centre, you should advise the customer to retry after funding the account, and the dunning schedule will retry on its own. [HC-4003-structured-004]",
+    "refused": false,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 7.5465,
+        "chunk_id": "HC-4003-structured-004",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "text": "## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 2,
+        "score": 2.493,
+        "chunk_id": "HC-4004-structured-005",
+        "article_id": "HC-4004",
+        "source_file": "HC-4004-subscription-plan-mapping.md",
+        "product_area": "subscriptions",
+        "text": "## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 3,
+        "score": 2.3444,
+        "chunk_id": "HC-4003-structured-005",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5133 | The card is valid but the billing country on the card does not match the account tax country. | Correct the account tax country, or ask the customer to use a card issued in the account country. |\n| ERR-5140 | The payment method is a wallet token bound to a device that is no longer registered. | Ask the customer to pay once from the original device, or to add a normal card. |\n| ERR-5199 | The processor rejected the request because the account is flagged for manual review. | Do not retry. Escalate to Payments Ops. Retrying while flagged extends the review window. |",
+        "found_by": "keyword"
+      }
+    ],
+    "citations": [
+      {
+        "chunk_id": "HC-4003-structured-004",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "text": "## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |"
+      }
+    ],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "The ticket contains an error code ERR-5114 related to insufficient funds and asks whether to retry it. I need to look up this error code to get its cause and fix.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "ERR-5114"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4003-structured-004>>>\nHelp-centre entry for ERR-5114:\n\n[HC-4003-structured-004] (article HC-4003)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "I have the error code lookup result for ERR-5114 which directly answers the customer's question about retrying. No further lookups needed.",
+        "tool": "finish",
+        "args": {
+          "answer": "ERR-5114 indicates insufficient funds returned verbatim by the issuer. According to the help centre, you should advise the customer to retry after funding the account, and the dunning schedule will retry on its own. [HC-4003-structured-004]"
+        },
+        "observation": "ERR-5114 indicates insufficient funds returned verbatim by the issuer. According to the help centre, you should advise the customer to retry after funding the account, and the dunning schedule will retry on its own. [HC-4003-structured-004]",
+        "ok": true
+      }
+    ],
+    "stop_reason": "finished",
+    "llm_calls": 2,
+    "elapsed_s": 12.67,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  },
+  "T09": {
+    "question": "MIG-310 badge on the account, what do I do?",
+    "answer": "The MIG-310 badge means your account was deferred because a payment was in flight at cutover. It is retried nightly, so you should wait one night. Escalate only if the badge is unchanged after 48 hours. [HC-4001-structured-005]",
+    "refused": false,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 10.9366,
+        "chunk_id": "HC-4001-structured-005",
+        "article_id": "HC-4001",
+        "source_file": "HC-4001-billing-migration-overview.md",
+        "product_area": "billing_core",
+        "text": "| Code | Badge text | Meaning | Agent action |\n|---|---|---|---|\n| MIG-100 | Migrated | The account moved cleanly. Balances match to the cent. | None. Treat the account as normal. |\n| MIG-140 | Migrated with rounding | Balance differs from BL1 by less than 0.05 in account currency. The difference was written off automatically. | None. Explain the write-off if the customer asks. |\n| MIG-220 | Partial | Invoices moved but at least one credit note failed to import. | Open a Billing Ops ticket with the account ID. Do not reissue invoices yourself. |\n| MIG-310 | Deferred | The account was skipped because a payment was in flight at cutover. It is retried nightly. | Wait one night. Escalate only if the badge is unchanged after 48 hours. |\n| MIG-450 | Blocked | The account has a legacy contract term that BL2 cannot represent. | Escalate to Billing Ops immediately. These accounts cannot self-serve any plan change. |",
+        "found_by": "keyword"
+      }
+    ],
+    "citations": [
+      {
+        "chunk_id": "HC-4001-structured-005",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4001",
+        "source_file": "HC-4001-billing-migration-overview.md",
+        "text": "| Code | Badge text | Meaning | Agent action |\n|---|---|---|---|\n| MIG-100 | Migrated | The account moved cleanly. Balances match to the cent. | None. Treat the account as normal. |\n| MIG-140 | Migrated with rounding | Balance differs from BL1 by less than 0.05 in account currency. The difference was written off automatically. | None. Explain the write-off if the customer asks. |\n| MIG-220 | Partial | Invoices moved but at least one credit note failed to import. | Open a Billing Ops ticket with the account ID. Do not reissue invoices yourself. |\n| MIG-310 | Deferred | The account was skipped because a payment was in flight at cutover. It is retried nightly. | Wait one night. Escalate only if the badge is unchanged after 48 hours. |\n| MIG-450 | Blocked | The account has a legacy contract term that BL2 cannot represent. | Escalate to Billing Ops immediately. These accounts cannot self-serve any plan change. |"
+      }
+    ],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "The ticket mentions error code MIG-310, so I should look it up by code to get its cause and fix.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "MIG-310"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4001-structured-005>>>\nHelp-centre entry for MIG-310:\n\n[HC-4001-structured-005] (article HC-4001)\n| Code | Badge text | Meaning | Agent action |\n|---|---|---|---|\n| MIG-310 | Deferred | The account was skipped because a payment was in flight at cutover. It is retried nightly. | Wait one night. Escalate only if the badge is unchanged after 48 hours. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "I have the cause and fix for MIG-310 from the error code lookup. The badge means the account was skipped due to a payment in flight at cutover, it's retried nightly, and the user should wait one night",
+        "tool": "finish",
+        "args": {
+          "answer": "The MIG-310 badge means your account was deferred because a payment was in flight at cutover. It is retried nightly, so you should wait one night. Escalate only if the badge is unchanged after 48 hours. [HC-4001-structured-005]"
+        },
+        "observation": "The MIG-310 badge means your account was deferred because a payment was in flight at cutover. It is retried nightly, so you should wait one night. Escalate only if the badge is unchanged after 48 hours. [HC-4001-structured-005]",
+        "ok": true
+      }
+    ],
+    "stop_reason": "finished",
+    "llm_calls": 2,
+    "elapsed_s": 21.82,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  },
+  "T10": {
+    "question": "A VAT ID failed VIES validation with ERR-7203. What is the fix?",
+    "answer": "The VAT ID failed real-time validation against VIES because the number is well-formed but is not registered or is not valid for cross-border trade [HC-4005-structured-003]. The fix is to ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab [HC-4005-structured-003].",
+    "refused": false,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 7.1042,
+        "chunk_id": "HC-4005-structured-003",
+        "article_id": "HC-4005",
+        "source_file": "HC-4005-tax-and-vat.md",
+        "product_area": "tax",
+        "text": "## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 2,
+        "score": 2.493,
+        "chunk_id": "HC-4004-structured-005",
+        "article_id": "HC-4004",
+        "source_file": "HC-4004-subscription-plan-mapping.md",
+        "product_area": "subscriptions",
+        "text": "## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 3,
+        "score": 2.3474,
+        "chunk_id": "HC-4003-structured-004",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "text": "## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |",
+        "found_by": "keyword"
+      }
+    ],
+    "citations": [
+      {
+        "chunk_id": "HC-4005-structured-003",
+        "resolves": true,
+        "was_in_context": true,
+        "article_id": "HC-4005",
+        "source_file": "HC-4005-tax-and-vat.md",
+        "text": "## Tax validation error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7101 | The tax ID format is wrong for the selected country. Usually the country prefix was typed twice. | Correct the format on the Tax tab. The field rejects the value on save, so no invoice is affected yet. |\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n| ERR-7208 | VIES was unreachable when validation ran. This is a temporary outage on the tax authority side, not a customer problem. | Retry after one hour. Do not remove the customer's VAT ID. Invoices finalise with the last known good status. |\n| ERR-7215 | The customer name on the account does not match the name registered against the VAT ID. | Update the legal entity name on the account to match the registration exactly, then revalidate. |"
+      }
+    ],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "The ticket contains an error code ERR-7203 related to VAT ID VIES validation. I should look up this error code to find its cause and fix.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "ERR-7203"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4005-structured-003>>>\nHelp-centre entry for ERR-7203:\n\n[HC-4005-structured-003] (article HC-4005)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-7203 | The VAT ID failed real-time validation against VIES. The number is well-formed but is not registered or is not valid for cross-border trade. | Ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "I have the error code ERR-7203 looked up. The cause is that the VAT ID failed VIES validation - it's well-formed but not registered or not valid for cross-border trade. The fix is to ask the customer ",
+        "tool": "finish",
+        "args": {
+          "answer": "The VAT ID failed real-time validation against VIES because the number is well-formed but is not registered or is not valid for cross-border trade [HC-4005-structured-003]. The fix is to ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab [HC-4005-structured-003]."
+        },
+        "observation": "The VAT ID failed real-time validation against VIES because the number is well-formed but is not registered or is not valid for cross-border trade [HC-4005-structured-003]. The fix is to ask the customer to confirm the VAT ID with their tax authority, then click Revalidate on the Tax tab [HC-4005-structured-003].",
+        "ok": true
+      }
+    ],
+    "stop_reason": "finished",
+    "llm_calls": 2,
+    "elapsed_s": 11.29,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  },
+  "T11": {
+    "question": "What is our SLA for a P1 billing incident, and who is on call tonight?",
+    "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: SLA for a P1 billing incident and on-call personnel for tonight.",
+    "refused": true,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 0.0323,
+        "chunk_id": "HC-4006-structured-002",
+        "article_id": "HC-4006",
+        "source_file": "HC-4006-billing-api-and-webhooks.md",
+        "product_area": "api",
+        "last_updated": "2026-06-20",
+        "has_table_header": true,
+        "orphan_table_rows": false,
+        "char_len": 901,
+        "text": "## Endpoint mapping\n\n| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/invoices` | `GET /v2/billing/invoices` | Pagination is cursor-based. The `page` parameter is ignored and returns the first page silently. |\n| `GET /v1/invoices/{id}` | `GET /v2/billing/invoices/{id}` | The `number` field now includes a revision suffix on reissued invoices. |\n| `POST /v1/invoices/{id}/pay` | `POST /v2/billing/invoices/{id}/payments` | Returns 202 and settles asynchronously. Callers that assumed a synchronous 200 will misreport failures. |\n| `GET /v1/subscriptions` | `GET /v2/billing/subscriptions` | The `plan` field returns the new capability-tier name, not the legacy seat-count name. |\n| `POST /v1/subscriptions/{id}/cancel` | `POST /v2/billing/subscriptions/{id}/cancellations` | Cancellation is now scheduled at period end by default. Pass `immediate=true` for the old behaviour. |",
+        "found_by": "both",
+        "dense_rank": 1,
+        "keyword_rank": 3,
+        "dense_score": 0.6792,
+        "keyword_score": 2.0852
+      },
+      {
+        "rank": 2,
+        "score": 0.0318,
+        "chunk_id": "HC-4002-structured-005",
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "product_area": "invoicing",
+        "last_updated": "2026-06-11",
+        "has_table_header": true,
+        "orphan_table_rows": false,
+        "char_len": 761,
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4044 | The invoice total is negative because an imported credit note exceeded the invoice value. | Convert the remainder to account credit using Apply as Credit. Do not issue a refund for the difference. |\n| ERR-4055 | The billing period on the invoice overlaps a period that is already invoiced and paid. | Void the newer invoice. The paid invoice is the correct one. Confirm the customer has not been charged twice before closing the ticket. |\n| ERR-4061 | The invoice currency does not match the account currency. Caused by a mid-cycle currency change in the legacy system. | Escalate to Billing Ops. Agents cannot change invoice currency, and editing the account currency will not fix the existing invoice. |",
+        "found_by": "both",
+        "dense_rank": 2,
+        "keyword_rank": 4,
+        "dense_score": 0.6649,
+        "keyword_score": 1.7133
+      },
+      {
+        "rank": 3,
+        "score": 0.0311,
+        "chunk_id": "HC-4001-structured-002",
+        "article_id": "HC-4001",
+        "source_file": "HC-4001-billing-migration-overview.md",
+        "product_area": "billing_core",
+        "last_updated": "2026-06-02",
+        "has_table_header": false,
+        "orphan_table_rows": false,
+        "char_len": 980,
+        "text": "Agents should know three things before taking migration tickets. First, every\naccount was migrated, including cancelled accounts that still carry an open\nbalance. Second, invoice history was copied and not moved, so the legacy read-only\narchive stays available for 18 months after cutover. Third, during the Phase 3\ncutover the billing ledger is read-only for four hours. Inside that window a\ncustomer can view invoices but cannot pay, change a plan, or update a card. If a\ncustomer reports that \"the pay button does nothing\" and the timestamp falls inside\nthe freeze, that is expected behaviour and not a fault. Do not raise a payments\nincident for it.\n\nThe migration did not change prices. It did change invoice numbering, tax\nhandling, the payment token format, and the billing API surface. Each of those has\nits own article. Always confirm which of the four the customer is actually hitting\nbefore you troubleshoot, because the error codes overlap in wording but not in\ncause.",
+        "found_by": "both",
+        "dense_rank": 8,
+        "keyword_rank": 1,
+        "dense_score": 0.6463,
+        "keyword_score": 4.5052
+      }
+    ],
+    "citations": [],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "The ticket asks two things: (1) the SLA for a P1 billing incident, and (2) who is on call tonight. I need to look up the SLA for a P1 billing incident first.",
+        "tool": "search_help_centre",
+        "args": {
+          "query": "SLA for P1 billing incident"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4006-structured-002>>>\nTop 3 results for \"SLA for P1 billing incident\":\n\n[HC-4006-structured-002] (article HC-4006)\n## Endpoint mapping\n\n| v1 endpoint | v2 endpoint | Breaking change |\n|---|---|---|\n| `GET /v1/invoices` | `GET /v2/billing/invoices` | Pagination is cursor-based. The `page` parameter is ignored and returns the first page silently. |\n| `GET /v1/invoices/{id}` | `GET /v2/billing/invoices/{id}` | The `number` field now includes a revision suffix on reissued invoices. |\n| `POST /v1/invoices/{id}/pay` | `POST /v2/billing/invoices/{id}/payments` | Returns 202 and settles asynchronously. Callers that assumed a synchronous 200 will misreport failures. |\n| `GET /v1/subscriptions` | `GET /v2/billing/subscriptions` | The `plan` field returns the new capability-tier name, not the legacy seat-count name. |\n| `POST /v1/subscriptions/{id}/cancel` | `POST /v2/billing/subscriptions/{id}/cancellations` | Cancellation is now scheduled at period end by default. Pass `immediate=true` for the old behaviour.\n... [1 more characters]\n\n[HC-4002-structured-005] (article HC-4002)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4044 | The invoice total is negative because an imported credit note exceeded the invoice value. | Convert the remainder to account credit using Apply as Credit. Do not issue a refund for the difference. |\n| ERR-4055 | The billing period on the invoice overlaps a period that is already invoiced and paid. | Void the newer invoice. The paid invoice is the correct one. Confirm the customer has not been charged twice before closing the ticket. |\n| ERR-4061 | The invoice currency does not match the account currency. Caused by a mid-cycle currency change in the legacy system. | Escalate to Billing Ops. Agents cannot change invoice currency, and editing the account currency will not fix the existing invoice. |\n\n[HC-4001-structured-002] (article HC-4001)\nAgents should know three things before taking migration tickets. First, every\naccount was migrated, including cancelled accounts that still carry an open\nbalance. Second, invoice history was copied and not moved, so the legacy read-only\narchive stays available for 18 months after cutover. Third, during the Phase 3\ncutover the billing ledger is read-only for four hours. Inside that window a\ncustomer can view invoices but cannot pay, change a plan, or update a card. If a\ncustomer reports that \"the pay button does nothing\" and the timestamp falls inside\nthe freeze, that is expected behaviour and not a fault. Do not raise a payments\nincident for it.\n\nThe migration did not change prices. It did change invoice numbering, tax\nhandling, the payment token format, and the billing API surface. Each of those has\nits own article. Always confirm which of the four the customer is actually hitting\nbefor\n... [80 more characters]\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "The search for 'SLA for P1 billing incident' did not return the SLA information I need. I need to search more specifically for the SLA policy for P1 incidents.",
+        "tool": "(repeated)",
+        "args": {
+          "query": "SLA for P1 incident"
+        },
+        "observation": "You just ran that exact call. Running it again returns the same thing. Either look up something you have NOT looked up yet, or, if you already have the facts for every part of the ticket, call finish now.",
+        "ok": false
+      }
+    ],
+    "stop_reason": "repeated_action",
+    "llm_calls": 4,
+    "elapsed_s": 17.92,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  },
+  "T12": {
+    "question": "Customer is on ERR-4032 and also wants me to issue the refund through the Stripe dashboard. Walk me through the Stripe side.",
+    "answer": "REFUSED: The help-centre corpus does not contain this information.\nMissing: the run stopped early (OpenAIRateLimitError).",
+    "refused": true,
+    "retrieved": [
+      {
+        "rank": 1,
+        "score": 7.9301,
+        "chunk_id": "HC-4002-structured-004",
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "product_area": "invoicing",
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4010 | The invoice references a customer address that failed validation during import. Most often a missing postal code. | Open Billing then Customer Details, complete the address, then click Revalidate. The invoice finalises on the next hourly run. |\n| ERR-4021 | Two line items on the same invoice resolve to the same metered usage record. This happens on accounts that had overlapping legacy subscriptions. | Void the invoice, then run Rebuild Usage for the period. Never delete the usage record directly. |\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 2,
+        "score": 2.493,
+        "chunk_id": "HC-4004-structured-005",
+        "article_id": "HC-4004",
+        "source_file": "HC-4004-subscription-plan-mapping.md",
+        "product_area": "subscriptions",
+        "text": "## Plan change errors\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-6203 | The target plan does not include enough seats for the account's current active users. | Remove users first, or choose a plan with a higher seat count. The change is blocked, not queued. |\n| ERR-6210 | The account is on a contract-term plan and cannot self-serve a change. | Route to the account manager. Agents cannot override a contract term. |\n| ERR-6244 | A plan change was attempted while an invoice for the current period is still in draft. | Wait for the hourly finalisation run, then retry the change. |\n| ERR-6250 | The account is suspended for non-payment. | Collect payment first. Plan changes are blocked while suspended. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 3,
+        "score": 2.3474,
+        "chunk_id": "HC-4003-structured-004",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "text": "## Decline and token error codes\n\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-5101 | Generic decline returned by the issuing bank with no reason given. | Ask the customer to contact their bank. Do not retry more than once, because repeated attempts can trigger a fraud block. |\n| ERR-5108 | The saved card token was not re-tokenised during cutover. The token reference points at a BL1 record that no longer resolves. | Ask the customer to re-enter the card once. The new token is created automatically and the failed renewal retries within the hour. |\n| ERR-5114 | Insufficient funds. Returned verbatim by the issuer. | Advise the customer to retry after funding the account. The dunning schedule will retry on its own. |\n| ERR-5127 | 3-D Secure authentication was required but the session expired before the customer completed it. | Send the customer a fresh payment link from the invoice. Links expire after 30 minutes. |",
+        "found_by": "keyword"
+      },
+      {
+        "rank": 1,
+        "score": 0.0325,
+        "chunk_id": "HC-4002-structured-005",
+        "article_id": "HC-4002",
+        "source_file": "HC-4002-invoice-errors.md",
+        "product_area": "invoicing",
+        "last_updated": "2026-06-11",
+        "has_table_header": true,
+        "orphan_table_rows": false,
+        "char_len": 761,
+        "text": "| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4044 | The invoice total is negative because an imported credit note exceeded the invoice value. | Convert the remainder to account credit using Apply as Credit. Do not issue a refund for the difference. |\n| ERR-4055 | The billing period on the invoice overlaps a period that is already invoiced and paid. | Void the newer invoice. The paid invoice is the correct one. Confirm the customer has not been charged twice before closing the ticket. |\n| ERR-4061 | The invoice currency does not match the account currency. Caused by a mid-cycle currency change in the legacy system. | Escalate to Billing Ops. Agents cannot change invoice currency, and editing the account currency will not fix the existing invoice. |",
+        "found_by": "both",
+        "dense_rank": 1,
+        "keyword_rank": 2,
+        "dense_score": 0.7165,
+        "keyword_score": 4.3455
+      },
+      {
+        "rank": 2,
+        "score": 0.0315,
+        "chunk_id": "HC-4003-structured-006",
+        "article_id": "HC-4003",
+        "source_file": "HC-4003-payment-methods.md",
+        "product_area": "payments",
+        "last_updated": "2026-06-18",
+        "has_table_header": false,
+        "orphan_table_rows": false,
+        "char_len": 321,
+        "text": "## Refunds\n\nRefunds are issued back to the original payment method whenever the original token\nstill resolves. If the token was dropped during migration, the refund cannot be\nreturned to the card and must be issued as account credit instead. Agents can\nissue account credit up to 250 in account currency without approval.",
+        "found_by": "both",
+        "dense_rank": 6,
+        "keyword_rank": 1,
+        "dense_score": 0.6651,
+        "keyword_score": 6.0757
+      },
+      {
+        "rank": 3,
+        "score": 0.0295,
+        "chunk_id": "HC-4004-structured-004",
+        "article_id": "HC-4004",
+        "source_file": "HC-4004-subscription-plan-mapping.md",
+        "product_area": "subscriptions",
+        "last_updated": "2026-05-29",
+        "has_table_header": false,
+        "orphan_table_rows": false,
+        "char_len": 477,
+        "text": "## Renewal failures\n\nA renewal that cannot be charged does not cancel the subscription. It moves the\nsubscription through the dunning schedule described in the payments article, then\nsuspends it. A suspended subscription keeps customer data for 60 days. After 60\ndays the data is deleted and cannot be restored, even if the customer pays.\n\nRenewal retries and payment retries are the same schedule. Agents sometimes assume\nsubscriptions have their own retry timer. They do not.",
+        "found_by": "both",
+        "dense_rank": 12,
+        "keyword_rank": 4,
+        "dense_score": 0.6417,
+        "keyword_score": 3.0328
+      }
+    ],
+    "citations": [],
+    "runner": "agent",
+    "steps": [
+      {
+        "n": 1,
+        "thought": "The customer has two parts: an error code ERR-4032 and a request for Stripe refund instructions. I'll start by looking up the error code since it's exact.",
+        "tool": "lookup_error_code",
+        "args": {
+          "code": "ERR-4032"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4002-structured-004>>>\nHelp-centre entry for ERR-4032:\n\n[HC-4002-structured-004] (article HC-4002)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4032 | The invoice line item references a legacy tax code that no longer exists in BL2. The migration could not map it automatically. | Re-map the line item to a current tax code under Billing then Tax Codes, then reissue the invoice. |\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 2,
+        "thought": "I've resolved the ERR-4032 error code. Now I need to look up the Stripe refund instructions since the customer wants to issue a refund through the Stripe dashboard.",
+        "tool": "search_help_centre",
+        "args": {
+          "query": "issue refund through Stripe dashboard"
+        },
+        "observation": "<<<RETRIEVED_DOCUMENT id=HC-4002-structured-005>>>\nTop 3 results for \"issue refund through Stripe dashboard\":\n\n[HC-4002-structured-005] (article HC-4002)\n| Error code | Cause | Fix |\n|---|---|---|\n| ERR-4044 | The invoice total is negative because an imported credit note exceeded the invoice value. | Convert the remainder to account credit using Apply as Credit. Do not issue a refund for the difference. |\n| ERR-4055 | The billing period on the invoice overlaps a period that is already invoiced and paid. | Void the newer invoice. The paid invoice is the correct one. Confirm the customer has not been charged twice before closing the ticket. |\n| ERR-4061 | The invoice currency does not match the account currency. Caused by a mid-cycle currency change in the legacy system. | Escalate to Billing Ops. Agents cannot change invoice currency, and editing the account currency will not fix the existing invoice. |\n\n[HC-4003-structured-006] (article HC-4003)\n## Refunds\n\nRefunds are issued back to the original payment method whenever the original token\nstill resolves. If the token was dropped during migration, the refund cannot be\nreturned to the card and must be issued as account credit instead. Agents can\nissue account credit up to 250 in account currency without approval.\n\n[HC-4004-structured-004] (article HC-4004)\n## Renewal failures\n\nA renewal that cannot be charged does not cancel the subscription. It moves the\nsubscription through the dunning schedule described in the payments article, then\nsuspends it. A suspended subscription keeps customer data for 60 days. After 60\ndays the data is deleted and cannot be restored, even if the customer pays.\n\nRenewal retries and payment retries are the same schedule. Agents sometimes assume\nsubscriptions have their own retry timer. They do not.\n<<<END_RETRIEVED_DOCUMENT>>>",
+        "ok": true
+      },
+      {
+        "n": 3,
+        "thought": "I've resolved the ERR-4032 error code and found general refund information. The customer specifically wants step-by-step instructions for issuing a refund through the Stripe dashboard. I need to searc",
+        "tool": "(repeated)",
+        "args": {
+          "query": "Stripe dashboard refund steps"
+        },
+        "observation": "You just ran that exact call. Running it again returns the same thing. Either look up something you have NOT looked up yet, or, if you already have the facts for every part of the ticket, call finish now.",
+        "ok": false
+      }
+    ],
+    "stop_reason": "repeated_action",
+    "llm_calls": 5,
+    "elapsed_s": 21.12,
+    "error": null,
+    "gate_fired": false,
+    "budget_degraded": false,
+    "guarded": true,
+    "injection_hits": [],
+    "output_blocked": false,
+    "block_reasons": []
+  }
+}
