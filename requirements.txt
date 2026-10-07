@@ -13,6 +13,13 @@ langchain-openai>=0.2.0         # OpenAI-compatible client, used for OpenRouter
 chromadb>=0.5.0
 sentence-transformers>=3.0.0    # backs BAAI/bge-small-en-v1.5
 
+# --- MCP (Week 9) ---
+# The official SDK. Used by the servers under mcp_servers/, which have to be
+# exactly right or nobody else's client can talk to them. The client in
+# agent/mcp_client.py is hand-written on purpose and needs nothing from here.
+# 2.x renamed FastMCP to MCPServer, so the floor is 2.0.
+mcp>=2.0.0
+
 # --- Config ---
 pydantic>=2.8.0
 pydantic-settings>=2.4.0

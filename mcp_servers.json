@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "Every tool the agent can reach. This file is the ONLY thing that changes",
+    "when a capability is added or removed.",
+    "",
+    "The Week 9 deliverable is bolting the ticket-history server on without",
+    "touching the agent. Delete its block below and the agent loses two tools",
+    "and keeps working. Add a third server and it gains that server's tools on",
+    "the next start. No Python is edited either way.",
+    "",
+    "'trusted' is not decoration. A server's tool DESCRIPTIONS go straight into",
+    "the model's prompt, so a hostile server can write instructions there. An",
+    "untrusted server's descriptions are scanned by agent/guard.py before the",
+    "model ever sees them. See results/w9_results.md."
+  ],
+  "servers": [
+    {
+      "name": "helpcentre",
+      "command": ["python", "-m", "mcp_servers.helpcentre_server"],
+      "trusted": true,
+      "note": "Ours. Hybrid retrieval over the billing-migration corpus."
+    },
+    {
+      "name": "ticket-history",
+      "command": ["python", "-m", "mcp_servers.ticket_history_server"],
+      "trusted": false,
+      "note": "Bolted on in Week 9. Another team's system, so it is not trusted."
+    }
+  ]
+}

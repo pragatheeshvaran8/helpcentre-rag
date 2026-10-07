@@ -136,6 +136,12 @@ class AgentRun:
     elapsed_s: float = 0.0
     error: str | None = None
 
+    # Week 9. Which servers answered, and what they offered. Recorded so a
+    # report can show the agent really discovered its tools rather than
+    # importing them.
+    servers: list[str] = field(default_factory=list)
+    tools_discovered: list[str] = field(default_factory=list)
+
     # Week 8. What the defences saw and did on this run.
     guarded: bool = False
     injection_hits: list[str] = field(default_factory=list)
@@ -177,13 +183,16 @@ def _parse(reply: str) -> dict:
 
 
 def _decide(
-    ticket: str, memory: Memory, budget: Budget, guarded: bool = False
+    ticket: str, memory: Memory, budget: Budget, guarded: bool = False, toolbox=None
 ) -> tuple[dict | None, str]:
     """One LLM turn. Returns the parsed action, or None plus the raw reply."""
     from rag.answerer import _llm, invoke_with_retry
 
     history = _HISTORY_HEADER.format(scratchpad=memory.scratchpad()) if memory.steps else ""
-    system = SYSTEM.format(catalogue=tools.catalogue())
+    # The catalogue comes from whatever toolbox was handed in. Nothing in this
+    # file knows a tool's name, which is what lets a server be added in config.
+    catalogue = toolbox.catalogue() if toolbox is not None else tools.catalogue()
+    system = SYSTEM.format(catalogue=catalogue)
     if guarded:
         # Layer 1. The model is told, in its own instructions, that fenced text
         # is quoted data. Cheapest layer, weakest layer, never counted alone.
@@ -213,6 +222,7 @@ def run(
     verbose: bool = False,
     guarded: bool = True,
     output_markers: tuple[str, ...] = (),
+    toolbox=None,
 ) -> AgentRun:
     """Work one ticket. Every step is recorded, and every exit is a named reason.
 
@@ -227,6 +237,17 @@ def run(
     budget = budget or Budget()
     memory = Memory()
     result = AgentRun(question=ticket, guarded=guarded)
+
+    # MCP is the default path. A caller that passes its own toolbox is opting
+    # out, which the acceptance tests do so they can drive the loop without
+    # starting subprocesses.
+    own_toolbox = toolbox is None
+    if own_toolbox:
+        from agent.toolbox import connect
+
+        toolbox = connect()
+    result.servers = list(getattr(toolbox, "servers_up", []))
+    result.tools_discovered = toolbox.names()
 
     if guarded:
         # The TICKET is untrusted too. A customer writes it, or an agent pastes
@@ -252,7 +273,7 @@ def run(
 
         budget.spend_step()
         try:
-            action, raw = _decide(ticket, memory, budget, guarded)
+            action, raw = _decide(ticket, memory, budget, guarded, toolbox)
         except Exception as exc:
             result.stop_reason = ERROR
             result.error = f"{type(exc).__name__}: {exc}"[:300]
@@ -319,7 +340,7 @@ def run(
                 print(f"  step {budget.steps}: repeated action, warned")
             continue
 
-        outcome = tools.execute(action["tool"], action["args"])
+        outcome = toolbox.execute(action["tool"], action["args"])
 
         if guarded and outcome.chunks:
             # Layer 2. Retrieved text is the untrusted channel. Strip anything
@@ -374,6 +395,11 @@ def run(
     result.llm_calls = budget.llm_calls
     result.elapsed_s = round(time.monotonic() - started, 2)
     _finalise(result)
+    if own_toolbox:
+        # Only shut down what we started. A caller that supplied a toolbox may
+        # be reusing it across many tickets, and killing their servers after
+        # one run would restart every process on every ticket.
+        toolbox.close()
     return result
 
 

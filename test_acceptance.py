@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from config import STRATEGIES, STRATEGY_STRUCTURED, get_settings
+from config import BASE_DIR, STRATEGIES, STRATEGY_STRUCTURED, get_settings
 from rag import term
 
 REQUIRED_METADATA = ("source_file", "article_id", "product_area", "last_updated", "chunk_id")
@@ -729,11 +729,18 @@ def test_w7_tools() -> None:
     )
 
 
+def local_toolbox():
+    """The in-process tools, so loop tests do not start MCP subprocesses."""
+    from agent.tools import local_toolbox as _box
+
+    return _box()
+
+
 def _scripted(loop_mod, *replies):
     """A stand-in for the model, so the loop can be tested without an API key."""
     it = iter(replies)
 
-    def fake(ticket, memory, budget, guarded=False):
+    def fake(ticket, memory, budget, guarded=False, toolbox=None):
         budget.spend_call()
         raw = next(it, '{"thought":"","tool":"finish","args":{"answer":"stub"}}')
         try:
@@ -760,7 +767,7 @@ def test_w7_stop_conditions() -> None:
             '{"thought":"a","tool":"lookup_error_code","args":{"code":"ERR-4032"}}',
             '{"thought":"b","tool":"finish","args":{"answer":"Re-map it [HC-4002-structured-004]."}}',
         )
-        done = loop_mod.run("ERR-4032?")
+        done = loop_mod.run("ERR-4032?", toolbox=local_toolbox())
         check("a loop that calls finish stops with finished", done.stop_reason == FINISHED)
         check("a finished run records every step", len(done.steps) == 2)
         check("a finished run resolves its citations", any(c.resolves for c in done.citations))
@@ -774,12 +781,12 @@ def test_w7_stop_conditions() -> None:
         ]
 
         loop_mod._decide = _scripted(loop_mod, *endless)
-        capped = loop_mod.run("never ends", budget=Budget(max_steps=3))
+        capped = loop_mod.run("never ends", budget=Budget(max_steps=3), toolbox=local_toolbox())
         check("the step limit stops the loop", capped.stop_reason == STEP_LIMIT)
         check("the step limit is obeyed exactly", len(capped.steps) == 3, str(len(capped.steps)))
 
         loop_mod._decide = _scripted(loop_mod, *endless)
-        broke = loop_mod.run("never ends", budget=Budget(max_steps=99, max_llm_calls=4))
+        broke = loop_mod.run("never ends", budget=Budget(max_steps=99, max_llm_calls=4), toolbox=local_toolbox())
         check("the call limit stops the loop", broke.stop_reason == CALL_LIMIT)
 
         # A repeat is warned once, then stopped. The first live run repeated at
@@ -791,7 +798,7 @@ def test_w7_stop_conditions() -> None:
             '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
             '{"thought":"fine","tool":"finish","args":{"answer":"ok [HC-4002-structured-004]"}}',
         )
-        warned = loop_mod.run("repeats once, then takes the hint")
+        warned = loop_mod.run("repeats once, then takes the hint", toolbox=local_toolbox())
         check(
             "the first repeat is a warning, not a stop",
             warned.stop_reason == FINISHED,
@@ -809,7 +816,7 @@ def test_w7_stop_conditions() -> None:
             '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
             '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
         )
-        stuck = loop_mod.run("going nowhere")
+        stuck = loop_mod.run("going nowhere", toolbox=local_toolbox())
         check(
             "a repeat after the warning does stop the loop",
             stuck.stop_reason == REPEAT_LIMIT,
@@ -817,7 +824,7 @@ def test_w7_stop_conditions() -> None:
         )
 
         loop_mod._decide = _scripted(loop_mod, *endless)
-        cut = loop_mod.run("never ends", budget=Budget(max_steps=2))
+        cut = loop_mod.run("never ends", budget=Budget(max_steps=2), toolbox=local_toolbox())
         check("a cut-short run still produces an answer", bool(cut.answer))
         check("a cut-short run is never labelled complete", not cut.completed)
 
@@ -826,7 +833,7 @@ def test_w7_stop_conditions() -> None:
             "I will search the help centre now.",
             '{"thought":"ok","tool":"finish","args":{"answer":"done [HC-4002-structured-004]"}}',
         )
-        recovered = loop_mod.run("bad json first")
+        recovered = loop_mod.run("bad json first", toolbox=local_toolbox())
         check("an unparsable reply costs a step, not the run", recovered.stop_reason == FINISHED)
         check("the unparsable step is recorded", recovered.steps[0].tool == "(unparsed)")
     finally:
@@ -1104,7 +1111,7 @@ def test_w8_loop_guard_stops_a_loop() -> None:
         loop_mod._forced_answer = lambda t, m, b: "REFUSED: stub."
 
         loop_mod._decide = _scripted(loop_mod, *reworded)
-        guarded_run = loop_mod.run("SLA?", budget=Budget(similar_guard=True))
+        guarded_run = loop_mod.run("SLA?", budget=Budget(similar_guard=True), toolbox=local_toolbox())
         check(
             "the loop guard stops an agent that rewords the same search",
             guarded_run.stop_reason == REPEAT_LIMIT,
@@ -1112,7 +1119,7 @@ def test_w8_loop_guard_stops_a_loop() -> None:
         )
 
         loop_mod._decide = _scripted(loop_mod, *reworded)
-        old_run = loop_mod.run("SLA?", budget=Budget(similar_guard=False, max_steps=6))
+        old_run = loop_mod.run("SLA?", budget=Budget(similar_guard=False, max_steps=6), toolbox=local_toolbox())
         check(
             "the Week 7 guard alone does NOT stop it",
             old_run.stop_reason != REPEAT_LIMIT,
@@ -1188,10 +1195,16 @@ def test_w8_least_privilege() -> None:
 
     from agent import tools
 
-    source = inspect.getsource(tools)
+    # Match real use, not prose. The first version grepped raw substrings and
+    # tripped on the word "subprocesses" inside a docstring.
+    source = chr(10).join(
+        line
+        for line in inspect.getsource(tools).splitlines()
+        if not line.lstrip().startswith("#")
+    )
     forbidden = {
-        "shell execution": ("subprocess", "os.system", "popen"),
-        "file writing": ("open(", ".write(", "shutil"),
+        "shell execution": ("import subprocess", "os.system(", ".popen("),
+        "file writing": ("open(", ".write(", "shutil."),
         "outbound network": ("requests.", "httpx.", "urllib.request"),
         # Named precisely. A bare "token" matched a local variable holding the
         # normalised error code, which is not a credential.
@@ -1199,7 +1212,7 @@ def test_w8_least_privilege() -> None:
     }
     for label, needles in forbidden.items():
         hits = [n for n in needles if n in source]
-        check(f"tools cannot reach: {label}", not hits, str(hits))
+        check(f"tool functions cannot reach: {label}", not hits, str(hits))
 
     check(
         "every tool is declared in one registry",
@@ -1247,6 +1260,291 @@ def test_w8_defence_is_measured_not_assumed() -> None:
     )
 
 
+
+
+# ---------------------------------------------------------------------------
+# Week 9: MCP, discovery, and the server bolted on without touching the agent
+# ---------------------------------------------------------------------------
+def test_w9_handshake() -> None:
+    """The protocol, end to end, against a real server process."""
+    from agent.mcp_client import PROTOCOL_VERSION, MCPClient, python_server
+
+    try:
+        with MCPClient(
+            "ticket-history", python_server("mcp_servers.ticket_history_server")
+        ) as client:
+            check("the server completes the handshake", bool(client.protocol_version))
+            check(
+                "the server names itself",
+                client.server_info.get("name") == "ticket-history",
+                str(client.server_info),
+            )
+            check(
+                "client and server agree on a protocol version",
+                client.protocol_version == PROTOCOL_VERSION,
+                f"{client.protocol_version} vs {PROTOCOL_VERSION}",
+            )
+
+            tools = client.list_tools()
+            check("tools/list returns tools", len(tools) == 2, str([t.name for t in tools]))
+            check(
+                "every tool arrives with a schema",
+                all(t.schema.get("properties") for t in tools),
+            )
+            check(
+                "every tool arrives with a description the model can act on",
+                all(len(t.description) > 60 for t in tools),
+            )
+
+            text = client.call_tool("find_similar_tickets", {"error_code": "ERR-4032"})
+            check("tools/call returns text", "SUP-2041" in text, text[:60])
+
+            log = client.transcript(4)
+            methods = [e["msg"].get("method") for e in log if e["dir"] == "->"]
+            check(
+                "the handshake is initialize then notifications/initialized",
+                methods[:2] == ["initialize", "notifications/initialized"],
+                str(methods[:3]),
+            )
+    except Exception as exc:
+        check("the MCP handshake works", False, f"{type(exc).__name__}: {exc}")
+
+
+def test_w9_discovery_not_hardcoding() -> None:
+    """The agent must not know a tool's name until a server tells it."""
+    import inspect
+
+    import agent.loop as loop_mod
+    from agent.toolbox import connect, load_config
+
+    servers = load_config()
+    check("mcp_servers.json lists servers", len(servers) >= 2, str([s["name"] for s in servers]))
+    check(
+        "every configured server declares whether it is trusted",
+        all("trusted" in s for s in servers),
+        str([s["name"] for s in servers if "trusted" not in s]),
+    )
+
+    # The real proof of decoupling: the loop cannot name a tool.
+    source = inspect.getsource(loop_mod)
+    remote_names = ("search_help_centre", "lookup_error_code", "get_ticket_history",
+                    "find_similar_tickets")
+    leaked = [n for n in remote_names if n in source]
+    check(
+        "agent/loop.py names no discovered tool",
+        not leaked,
+        f"leaked: {leaked}",
+    )
+    check(
+        "agent/loop.py still owns finish, because that is its own control flow",
+        'action["tool"] == "finish"' in source or "FINISH" in source,
+    )
+
+    try:
+        with connect(servers) as box:
+            check("every configured server started", not box.servers_down, str(box.servers_down))
+            check(
+                "tools were discovered from more than one server",
+                len({t.server for t in box.tools.values()} - {"local"}) >= 2,
+                str({t.server for t in box.tools.values()}),
+            )
+            check(
+                "finish is local and was never discovered",
+                box.tools["finish"].server == "local",
+            )
+            check(
+                "the catalogue says which server each tool came from",
+                all(s in box.catalogue() for s in box.servers_up),
+            )
+    except Exception as exc:
+        check("discovery works", False, f"{type(exc).__name__}: {exc}")
+
+
+def test_w9_bolt_on_without_touching_the_agent() -> None:
+    """The Week 9 deliverable, asserted rather than claimed."""
+    import hashlib
+    from pathlib import Path
+
+    from agent.toolbox import connect, load_config
+
+    def agent_hashes() -> dict:
+        return {
+            p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in sorted((BASE_DIR / "agent").glob("*.py"))
+        }
+
+    before = agent_hashes()
+    full = load_config()
+    without = [s for s in full if s["name"] != "ticket-history"]
+    check("the bolt-on server is in the config", len(without) == len(full) - 1)
+
+    try:
+        with connect(without) as box:
+            minus = set(box.names())
+        with connect(full) as box:
+            plus = set(box.names())
+    except Exception as exc:
+        check("both configurations connect", False, f"{type(exc).__name__}: {exc}")
+        return
+
+    gained = plus - minus
+    check(
+        "adding the server to config adds its tools",
+        gained == {"get_ticket_history", "find_similar_tickets"},
+        str(sorted(gained)),
+    )
+    check("removing it takes them away again", not (gained & minus), str(sorted(gained & minus)))
+
+    after = agent_hashes()
+    changed = [k for k in before if before[k] != after.get(k)]
+    check(
+        "no agent source file changed between the two configurations",
+        not changed,
+        f"changed: {changed}",
+    )
+
+
+def test_w9_recoverable_errors() -> None:
+    """A broken server must cost its own tools and nothing else."""
+    from agent.toolbox import connect, load_config
+
+    broken = {
+        "name": "does-not-exist",
+        "command": ["python", "-m", "mcp_servers.no_such_module"],
+        "trusted": False,
+    }
+    servers = load_config() + [broken]
+    try:
+        with connect(servers) as box:
+            check(
+                "a server that will not start is recorded, not raised",
+                any(name == "does-not-exist" for name, _ in box.servers_down),
+                str(box.servers_down),
+            )
+            check(
+                "the working servers still came up",
+                "helpcentre" in box.servers_up and "ticket-history" in box.servers_up,
+                str(box.servers_up),
+            )
+            result = box.execute("no_such_tool", {})
+            check("an unknown tool comes back as an observation", not result.ok)
+            check("the observation lists what IS available", "finish" in result.observation)
+    except Exception as exc:
+        check("a broken server does not take the agent down", False, f"{type(exc).__name__}: {exc}")
+
+
+def test_w9_tool_poisoning() -> None:
+    """A tool description is prompt text, so an untrusted one must be scanned."""
+    from agent import guard
+    from agent.toolbox import connect
+    from mcp_servers.hostile_server import CLEAN_DESCRIPTION, POISONED_DESCRIPTION
+
+    check(
+        "the hostile description really does carry an injection",
+        not guard.scan(POISONED_DESCRIPTION).clean,
+        str(guard.scan(POISONED_DESCRIPTION).hits),
+    )
+    check(
+        "its harmless first line is not what trips the scanner",
+        guard.scan(CLEAN_DESCRIPTION).clean,
+    )
+
+    hostile = {
+        "name": "ticket-archive",
+        "command": ["python", "-m", "mcp_servers.hostile_server"],
+        "trusted": False,
+    }
+    try:
+        with connect([hostile]) as box:
+            desc = next(t.description for t in box.tools.values() if t.server == "ticket-archive")
+            check(
+                "an untrusted server's description is scanned before the model sees it",
+                guard.REDACTION in desc,
+                desc[:70],
+            )
+            check("what was stripped is recorded", bool(box.poisoned), str(box.poisoned))
+            check(
+                "the harmless part of the description survives",
+                "archived tickets" in desc.lower(),
+            )
+
+        with connect([dict(hostile, trusted=True)]) as box:
+            desc = next(t.description for t in box.tools.values() if t.server == "ticket-archive")
+            check(
+                "a trusted server is NOT scanned, which is what the flag costs",
+                guard.REDACTION not in desc,
+            )
+    except Exception as exc:
+        check("the poisoning demo runs", False, f"{type(exc).__name__}: {exc}")
+
+
+def test_w9_privilege_boundary_moved() -> None:
+    """Week 9 changed the security posture. Say where the new line is.
+
+    Week 8 asserted that nothing in the tool layer could reach a shell. That is
+    still true of the tool FUNCTIONS, and it is no longer true of the agent as
+    a whole: agent/mcp_client.py starts server processes, because that is what
+    a stdio transport is.
+
+    So the boundary moved. It is no longer "no subprocess". It is "only the
+    commands an operator wrote in mcp_servers.json". This asserts that, rather
+    than leaving the Week 8 claim standing when it has stopped being complete.
+    """
+    import inspect
+    import json
+
+    from agent import mcp_client, toolbox
+
+    check(
+        "the client really does start processes, so the Week 8 claim narrowed",
+        "subprocess.Popen" in inspect.getsource(mcp_client),
+    )
+
+    source = inspect.getsource(toolbox)
+    check(
+        "the only commands ever run come from the config file",
+        "server[\"command\"]" in source,
+        "commands must not be built from tool output or model output",
+    )
+
+    config = json.loads((BASE_DIR / "mcp_servers.json").read_text(encoding="utf-8"))
+    commands = [s["command"] for s in config.get("servers", [])]
+    check("every configured command is a fixed list, not a string", all(isinstance(c, list) for c in commands))
+    check(
+        "no configured command goes through a shell",
+        not any(any(tok in " ".join(c) for tok in ("|", ";", "&&", ">")) for c in commands),
+        str(commands),
+    )
+    check(
+        "the agent never builds a server command from model output",
+        "shell=True" not in inspect.getsource(mcp_client),
+    )
+
+
+def test_w9_chunk_ids_survive_the_wire() -> None:
+    """MCP returns text, so anything the scorers need must be recoverable from it."""
+    from agent.toolbox import _chunks_from
+
+    text = (
+        "Help-centre entry for ERR-4032:\n\n[HC-4002-structured-004] (article HC-4002)\n"
+        "| ERR-4032 | Legacy tax code. | Re-map under Billing then Tax Codes. |"
+    )
+    chunks = _chunks_from(text)
+    check("a chunk id in the text resolves to a real chunk", len(chunks) == 1, str(len(chunks)))
+    if chunks:
+        check(
+            "the resolved chunk carries the article id the checks read",
+            chunks[0]["article_id"] == "HC-4002",
+            str(chunks[0].get("article_id")),
+        )
+        check(
+            "the resolved chunk carries the body text the checks read",
+            "Tax Codes" in chunks[0]["text"],
+        )
+    check("an invented chunk id resolves to nothing", not _chunks_from("[HC-9999-structured-001]"))
+    check("text with no chunk ids yields no chunks", not _chunks_from("no ids here"))
+
+
 # ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(description="Acceptance tests.")
@@ -1290,6 +1588,13 @@ def main() -> None:
         ("w8 output validation", test_w8_output_validation),
         ("w8 least privilege", test_w8_least_privilege),
         ("w8 defence is measured", test_w8_defence_is_measured_not_assumed),
+        ("w9 mcp handshake", test_w9_handshake),
+        ("w9 discovery not hardcoding", test_w9_discovery_not_hardcoding),
+        ("w9 bolt-on without touching the agent", test_w9_bolt_on_without_touching_the_agent),
+        ("w9 recoverable errors", test_w9_recoverable_errors),
+        ("w9 tool poisoning", test_w9_tool_poisoning),
+        ("w9 privilege boundary moved", test_w9_privilege_boundary_moved),
+        ("w9 chunk ids survive the wire", test_w9_chunk_ids_survive_the_wire),
     ]
     if args.with_generation:
         groups.append(("generation and refusal", test_generation))

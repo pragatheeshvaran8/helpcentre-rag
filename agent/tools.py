@@ -189,6 +189,17 @@ def lookup_error_code(code: str) -> ToolResult:
     return ToolResult("\n".join(blocks), hits)
 
 
+# Lifted out of the registry so agent/toolbox.py can reuse the exact wording.
+# `finish` is the only tool that is never discovered: it is not a capability,
+# it is how the loop stops, and a remote server has no business owning that.
+FINISH_DESCRIPTION = (
+    "Give the final answer to the customer's ticket and stop. Every sentence "
+    "must end with the [chunk_id] it came from. Call this as soon as you have "
+    "the facts for every part of the ticket. Do not call it before you have "
+    "looked something up."
+)
+
+
 def finish(answer: str) -> ToolResult:
     """Terminal tool. Calling it ends the loop with this text as the answer."""
     return ToolResult(answer or "")
@@ -223,15 +234,48 @@ TOOLS: dict[str, Tool] = {
     "finish": Tool(
         name="finish",
         args="answer: str",
-        description=(
-            "Give the final answer to the customer's ticket and stop. Every "
-            "sentence must end with the [chunk_id] it came from. Call this as "
-            "soon as you have the facts for every part of the ticket. Do not "
-            "call it before you have looked something up."
-        ),
+        description=FINISH_DESCRIPTION,
         run=finish,
     ),
 }
+
+
+class LocalToolbox:
+    """The Week 7 in-process tools, behind the Week 9 toolbox interface.
+
+    agent/loop.py no longer imports tools directly. It is handed something with
+    catalogue(), execute() and names(), and it cannot tell whether the tools
+    live in this process or in three subprocesses on the other side of a pipe.
+    That indifference is the point: it is what lets a server be bolted on
+    without the agent changing.
+
+    This exists so the acceptance tests can drive the loop without starting
+    subprocesses. The DEFAULT path is MCP.
+    """
+
+    server = "local"
+
+    def catalogue(self) -> str:
+        return catalogue()
+
+    def names(self) -> list[str]:
+        return sorted(TOOLS)
+
+    def execute(self, name: str, args: dict) -> ToolResult:
+        return execute(name, args)
+
+    def close(self) -> None:
+        pass
+
+    def __enter__(self) -> "LocalToolbox":
+        return self
+
+    def __exit__(self, *exc) -> None:
+        pass
+
+
+def local_toolbox() -> LocalToolbox:
+    return LocalToolbox()
 
 
 def catalogue() -> str:
