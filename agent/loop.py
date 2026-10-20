@@ -136,6 +136,11 @@ class AgentRun:
     elapsed_s: float = 0.0
     error: str | None = None
 
+    # Week 10. Tokens and cost, so the squad race is settled by numbers rather
+    # than by call count, which hides what a hand-off actually costs.
+    meter: "Meter" = field(default_factory=lambda: __import__(
+        "agent.meter", fromlist=["Meter"]).Meter())
+
     # Week 9. Which servers answered, and what they offered. Recorded so a
     # report can show the agent really discovered its tools rather than
     # importing them.
@@ -183,10 +188,12 @@ def _parse(reply: str) -> dict:
 
 
 def _decide(
-    ticket: str, memory: Memory, budget: Budget, guarded: bool = False, toolbox=None
+    ticket: str, memory: Memory, budget: Budget, guarded: bool = False, toolbox=None,
+    meter=None,
 ) -> tuple[dict | None, str]:
     """One LLM turn. Returns the parsed action, or None plus the raw reply."""
-    from rag.answerer import _llm, invoke_with_retry
+    from agent.meter import metered_invoke
+    from rag.answerer import _llm
 
     history = _HISTORY_HEADER.format(scratchpad=memory.scratchpad()) if memory.steps else ""
     # The catalogue comes from whatever toolbox was handed in. Nothing in this
@@ -198,12 +205,15 @@ def _decide(
         # is quoted data. Cheapest layer, weakest layer, never counted alone.
         system = system + "\n\n" + guard.TRUST_NOTICE
     budget.spend_call()
-    reply = invoke_with_retry(
+    reply = metered_invoke(
         _llm(max_tokens=400),
         [
             ("system", system),
             ("human", USER.format(ticket=ticket, history=history)),
         ],
+        meter,
+        "agent",
+        f"step {budget.steps}",
     )
     raw = (reply.content or "").strip()
     try:
@@ -273,7 +283,7 @@ def run(
 
         budget.spend_step()
         try:
-            action, raw = _decide(ticket, memory, budget, guarded, toolbox)
+            action, raw = _decide(ticket, memory, budget, guarded, toolbox, result.meter)
         except Exception as exc:
             result.stop_reason = ERROR
             result.error = f"{type(exc).__name__}: {exc}"[:300]
@@ -376,7 +386,7 @@ def run(
     # from what it gathered rather than returning nothing, and stop_reason says
     # it was cut short, so no report can mistake it for a completed run.
     if result.stop_reason in EXHAUSTED and not result.answer:
-        result.answer = _forced_answer(ticket, memory, budget)
+        result.answer = _forced_answer(ticket, memory, budget, result.meter)
 
     if guarded:
         # Layer 3. This does not care how the answer was produced. It checks
@@ -400,10 +410,11 @@ def run(
         # be reusing it across many tickets, and killing their servers after
         # one run would restart every process on every ticket.
         toolbox.close()
+
     return result
 
 
-def _forced_answer(ticket: str, memory: Memory, budget: Budget) -> str:
+def _forced_answer(ticket: str, memory: Memory, budget: Budget, meter=None) -> str:
     """One last call to turn a cut-short run into a usable answer.
 
     This reuses the SAME grounding prompt the fixed workflow uses, rather than
@@ -423,10 +434,11 @@ def _forced_answer(ticket: str, memory: Memory, budget: Budget) -> str:
             "Missing: nothing was retrieved before the run hit its limit."
         )
     try:
-        from rag.answerer import SYSTEM_PROMPT, USER_TEMPLATE, _llm, invoke_with_retry
+        from agent.meter import metered_invoke
+        from rag.answerer import SYSTEM_PROMPT, USER_TEMPLATE, _llm
 
         budget.spend_call()
-        reply = invoke_with_retry(
+        reply = metered_invoke(
             _llm(max_tokens=400),
             [
                 ("system", SYSTEM_PROMPT),
@@ -437,6 +449,9 @@ def _forced_answer(ticket: str, memory: Memory, budget: Budget) -> str:
                     ),
                 ),
             ],
+            meter,
+            "agent",
+            "forced answer",
         )
         return (reply.content or "").strip()
     except Exception as exc:

@@ -740,7 +740,12 @@ def _scripted(loop_mod, *replies):
     """A stand-in for the model, so the loop can be tested without an API key."""
     it = iter(replies)
 
-    def fake(ticket, memory, budget, guarded=False, toolbox=None):
+    # *_ on purpose. _decide has gained a parameter in three separate weeks
+    # (guarded, toolbox, meter) and each time this stub broke a dozen checks
+    # with a TypeError that looked like a loop bug. The first three arguments
+    # are what the stub actually uses; anything the loop adds after them is
+    # the loop's business, not the stub's.
+    def fake(ticket, memory, budget, *_, **__):
         budget.spend_call()
         raw = next(it, '{"thought":"","tool":"finish","args":{"answer":"stub"}}')
         try:
@@ -760,7 +765,7 @@ def test_w7_stop_conditions() -> None:
 
     real_decide, real_forced = loop_mod._decide, loop_mod._forced_answer
     try:
-        loop_mod._forced_answer = lambda t, m, b: "REFUSED: stub, the budget ran out."
+        loop_mod._forced_answer = lambda t, m, b, *_: "REFUSED: stub, the budget ran out."
 
         loop_mod._decide = _scripted(
             loop_mod,
@@ -1108,7 +1113,7 @@ def test_w8_loop_guard_stops_a_loop() -> None:
         )
     ]
     try:
-        loop_mod._forced_answer = lambda t, m, b: "REFUSED: stub."
+        loop_mod._forced_answer = lambda t, m, b, *_: "REFUSED: stub."
 
         loop_mod._decide = _scripted(loop_mod, *reworded)
         guarded_run = loop_mod.run("SLA?", budget=Budget(similar_guard=True), toolbox=local_toolbox())
@@ -1545,6 +1550,271 @@ def test_w9_chunk_ids_survive_the_wire() -> None:
     check("text with no chunk ids yields no chunks", not _chunks_from("no ids here"))
 
 
+
+
+# ---------------------------------------------------------------------------
+# Week 10: the squad, and whether the race between it and the single agent
+# is actually fair
+# ---------------------------------------------------------------------------
+def test_w10_race_is_fair() -> None:
+    """The mentor's first question. Both sides must run the SAME tests."""
+    import inspect
+
+    from evals import run_w10
+    from evals.w7_tickets import TICKETS
+
+    source = inspect.getsource(run_w10)
+
+    check(
+        "both runners are raced over one ticket list",
+        "ticket_set()" in source and "w7_tickets" in source,
+    )
+    check(
+        "the ticket set is the Week 7 one, unchanged",
+        len(TICKETS) == 12,
+        f"{len(TICKETS)} tickets",
+    )
+    check(
+        "one MCP toolbox is built and handed to both",
+        source.count("connect(") == 1 and "toolbox=box" in source,
+        "a second toolbox would charge one side for a start-up the other avoided",
+    )
+    check(
+        "both are scored by the same quality scorer",
+        "from evals.w7_race import part_coverage, score" in source,
+    )
+    check(
+        "both are scored by the same trajectory scorer",
+        "from evals.w8_trajectory import evaluate" in source,
+    )
+    check(
+        "all four required numbers are summarised",
+        all(k in source for k in ("pass_rate", "median_seconds", "total_tokens", "priced_cost")),
+    )
+
+
+def test_w10_meter_uses_the_provider_numbers() -> None:
+    """Tokens must come from the provider, not from a guess on our side."""
+    from agent.meter import USD_PER_MILLION_INPUT, USD_PER_MILLION_OUTPUT, Meter
+
+    class Reply:
+        usage_metadata = {"input_tokens": 100, "output_tokens": 25, "total_tokens": 125}
+        response_metadata = {"token_usage": {"cost": 0.0}}
+
+    meter = Meter()
+    meter.record("agent", "step 1", Reply())
+    meter.record("manager", "split", Reply())
+
+    check("the meter reads the provider's input tokens", meter.input_tokens == 200)
+    check("the meter reads the provider's output tokens", meter.output_tokens == 50)
+    check("totals add up", meter.total_tokens == 250)
+    check("calls are counted", meter.n_calls == 2)
+    check(
+        "a free model reports zero cost, and that is recorded honestly",
+        meter.reported_cost == 0.0,
+    )
+
+    expected = 200 / 1_000_000 * USD_PER_MILLION_INPUT + 50 / 1_000_000 * USD_PER_MILLION_OUTPUT
+    check(
+        "the priced estimate is arithmetic on the real token counts",
+        abs(meter.priced_cost - expected) < 1e-12,
+    )
+
+    by_who = meter.by_who()
+    check(
+        "tokens are attributed per participant",
+        set(by_who) == {"agent", "manager"},
+        str(sorted(by_who)),
+    )
+    check(
+        "per-participant input tokens are tracked, which is where a hand-off shows",
+        by_who["manager"]["input_tokens"] == 100,
+    )
+
+    # A reply with no usage block must not silently count as zero-cost truth.
+    class Bare:
+        usage_metadata = None
+        response_metadata = {}
+
+    bare = Meter()
+    bare.record("agent", "step 1", Bare())
+    check("a reply with no usage report records a call", bare.n_calls == 1)
+    check("and does not invent token counts", bare.total_tokens == 0)
+
+
+def test_w10_agent_cards_route() -> None:
+    """The manager must route by card, not by a hard-coded name."""
+    import inspect
+
+    from agent import squad
+
+    check("there is a manager plus two specialists", len(squad.SQUAD) == 2,
+          str([c.name for c in squad.SQUAD]))
+
+    for card in squad.SQUAD:
+        check(f"{card.name} publishes what it is for", len(card.description) > 50)
+        check(f"{card.name} publishes skills to route on", len(card.skills) >= 3)
+        check(f"{card.name} declares which tools it may use", bool(card.tools))
+
+    overlap = set(squad.CODE_DESK.tools) & set(squad.POLICY_DESK.tools)
+    check(
+        "the specialists do not share tools, so the split is real",
+        not overlap,
+        str(overlap),
+    )
+
+    # The routing proof: the manager's prompt is built from cards, and its code
+    # does not name a specialist.
+    check(
+        "the manager prompt is built from the cards",
+        "{cards}" in squad.MANAGER_SPLIT,
+    )
+    run_source = inspect.getsource(squad.run)
+    named = [c.name for c in squad.SQUAD if f'"{c.name}"' in run_source]
+    check(
+        "the manager's code names no specialist",
+        not named,
+        f"named: {named}",
+    )
+    check(
+        "routing is a lookup in the card registry",
+        "CARDS.get(assignee)" in run_source,
+    )
+
+
+def test_w10_task_lifecycle() -> None:
+    """Every hand-off is a task with a state, and a failure stays local."""
+    from agent.squad import COMPLETED, FAILED, SUBMITTED, WORKING, Task
+
+    check(
+        "the four A2A states exist",
+        {SUBMITTED, WORKING, COMPLETED, FAILED} == {"submitted", "working", "completed", "failed"},
+    )
+
+    task = Task(task_id="t1", assignee="code_desk", instruction="look up ERR-4032")
+    check("a new task starts as submitted", task.state == SUBMITTED)
+
+    task.state = FAILED
+    task.error = "boom"
+    row = task.as_dict()
+    check("a failed task records why", row["error"] == "boom" and row["state"] == FAILED)
+    check("a task records who it went to", row["assignee"] == "code_desk")
+    check("a task records what was asked", "ERR-4032" in row["instruction"])
+
+
+def test_w10_specialists_are_narrow() -> None:
+    """A specialist that could do everything is just the single agent."""
+    import inspect
+
+    from agent import squad
+
+    source = inspect.getsource(squad._run_specialist)
+    check(
+        "a specialist is offered only its own tools plus finish",
+        "card.tools" in source and '"finish"' in source,
+    )
+    check(
+        "reaching for another specialist's tool is refused, not executed",
+        "that tool is not yours" in source,
+    )
+    check(
+        "a specialist has its own small step budget",
+        squad.SPECIALIST_MAX_STEPS <= 4,
+        str(squad.SPECIALIST_MAX_STEPS),
+    )
+    check(
+        "a specialist failure fails its task, not the run",
+        "task.state = FAILED" in source,
+    )
+    check(
+        "the manager is told to give one specialist one question",
+        "Never give one specialist two questions" in squad.MANAGER_SPLIT,
+    )
+    check(
+        "the manager may only use what its specialists reported",
+        "Use ONLY what your specialists reported" in squad.MANAGER_ASSEMBLE,
+    )
+
+
+def test_w10_verdict_rule() -> None:
+    """The verdict must be derivable, and must be able to say 'keep the single'."""
+    from evals.run_w10 import SINGLE, SQUAD, verdict
+
+    cheap_single = {"passed": 10, "parts_cited_rate": 0.95, "total_tokens": 30_000}
+    dear_squad = {"passed": 10, "parts_cited_rate": 0.95, "total_tokens": 90_000}
+
+    tie = verdict(cheap_single, dear_squad)
+    check(
+        "on a quality tie the cheaper side wins",
+        tie["keep"] == SINGLE,
+        tie["keep"],
+    )
+    check("the token ratio is reported", tie["token_ratio"] == 3.0, str(tie["token_ratio"]))
+    check("the verdict carries a reason", len(tie["why"]) > 60)
+
+    better_squad = dict(dear_squad, passed=12)
+    won = verdict(cheap_single, better_squad)
+    check(
+        "the rule CAN pick the squad when it answers more tickets",
+        won["keep"] == SQUAD,
+        won["keep"],
+    )
+
+    worse_squad = dict(dear_squad, passed=7)
+    lost = verdict(cheap_single, worse_squad)
+    check("a worse and dearer squad loses", lost["keep"] == SINGLE)
+
+    one_ticket = dict(dear_squad, passed=11)
+    check(
+        "a one-ticket gap is treated as a real gap, not noise",
+        verdict(cheap_single, one_ticket)["keep"] == SQUAD,
+        "the rule says one whole ticket is the threshold",
+    )
+
+
+def test_w10_context_resend_is_measurable() -> None:
+    """The week's central claim has to be checkable from the records."""
+    import json
+    from pathlib import Path
+
+    base = Path(get_settings().results_dir) / "w10_runs"
+    squad_path = base / "squad__runs.json"
+    if not squad_path.exists():
+        info("w10 squad runs", "not run yet, skipping the measured check")
+        return
+
+    runs = json.loads(squad_path.read_text(encoding="utf-8"))
+    if not runs:
+        info("w10 squad runs", "cache is empty, skipping")
+        return
+
+    with_who = [r for r in runs.values() if (r.get("meter") or {}).get("by_who")]
+    check(
+        "every squad run attributes its tokens per participant",
+        len(with_who) == len(runs),
+        f"{len(with_who)}/{len(runs)}",
+    )
+
+    sample = next(iter(runs.values()))
+    who = sample["meter"]["by_who"]
+    check(
+        "the manager's tokens are recorded separately from the specialists'",
+        "manager" in who,
+        str(sorted(who)),
+    )
+    check(
+        "a ticket costs more than one call once it is split",
+        sample["meter"]["calls"] >= 2,
+        str(sample["meter"]["calls"]),
+    )
+    check(
+        "input tokens are recorded, which is where a hand-off shows its cost",
+        sample["meter"]["input_tokens"] > 0,
+    )
+
+
+
+
 # ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(description="Acceptance tests.")
@@ -1595,6 +1865,13 @@ def main() -> None:
         ("w9 tool poisoning", test_w9_tool_poisoning),
         ("w9 privilege boundary moved", test_w9_privilege_boundary_moved),
         ("w9 chunk ids survive the wire", test_w9_chunk_ids_survive_the_wire),
+        ("w10 race is fair", test_w10_race_is_fair),
+        ("w10 meter uses provider numbers", test_w10_meter_uses_the_provider_numbers),
+        ("w10 agent cards route", test_w10_agent_cards_route),
+        ("w10 task lifecycle", test_w10_task_lifecycle),
+        ("w10 specialists are narrow", test_w10_specialists_are_narrow),
+        ("w10 verdict rule", test_w10_verdict_rule),
+        ("w10 context re-send is measurable", test_w10_context_resend_is_measurable),
     ]
     if args.with_generation:
         groups.append(("generation and refusal", test_generation))

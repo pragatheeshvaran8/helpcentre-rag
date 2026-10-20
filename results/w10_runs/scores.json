@@ -1,0 +1,88 @@
+{
+  "single": {
+    "n": 12,
+    "passed": 11,
+    "pass_rate": 0.9167,
+    "parts_cited_rate": 1.0,
+    "multi_fully_cited": 6,
+    "multi_n": 6,
+    "trajectory_clean": 10,
+    "median_seconds": 19.16,
+    "total_seconds": 293.75,
+    "slowest_seconds": 62.22,
+    "input_tokens": 56854,
+    "output_tokens": 4624,
+    "total_tokens": 61478,
+    "median_tokens": 4055.5,
+    "tokens_per_ticket": 5123.2,
+    "calls": 40,
+    "reported_cost": 0.0,
+    "priced_cost": 0.011303,
+    "by_shape": {
+      "multi": {
+        "n": 6,
+        "passed": 6,
+        "fully_cited": 6,
+        "total_tokens": 28221,
+        "median_seconds": 22.16
+      },
+      "single": {
+        "n": 4,
+        "passed": 4,
+        "fully_cited": 4,
+        "total_tokens": 11770,
+        "median_seconds": 16.23
+      },
+      "refuse": {
+        "n": 2,
+        "passed": 1,
+        "fully_cited": 0,
+        "total_tokens": 21487,
+        "median_seconds": 39.39
+      }
+    }
+  },
+  "squad": {
+    "n": 12,
+    "passed": 10,
+    "pass_rate": 0.8333,
+    "parts_cited_rate": 0.9412,
+    "multi_fully_cited": 5,
+    "multi_n": 6,
+    "trajectory_clean": 0,
+    "median_seconds": 28.32,
+    "total_seconds": 408.25,
+    "slowest_seconds": 62.04,
+    "input_tokens": 36338,
+    "output_tokens": 5494,
+    "total_tokens": 41832,
+    "median_tokens": 3374.5,
+    "tokens_per_ticket": 3486.0,
+    "calls": 64,
+    "reported_cost": 0.0,
+    "priced_cost": 0.008747,
+    "by_shape": {
+      "multi": {
+        "n": 6,
+        "passed": 5,
+        "fully_cited": 5,
+        "total_tokens": 23359,
+        "median_seconds": 28.32
+      },
+      "single": {
+        "n": 4,
+        "passed": 4,
+        "fully_cited": 4,
+        "total_tokens": 7777,
+        "median_seconds": 22.68
+      },
+      "refuse": {
+        "n": 2,
+        "passed": 1,
+        "fully_cited": 0,
+        "total_tokens": 10696,
+        "median_seconds": 57.95
+      }
+    }
+  }
+}
