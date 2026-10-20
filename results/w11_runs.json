@@ -1,0 +1,171 @@
+{
+  "log": {
+    "backfill": {
+      "written": 81,
+      "days": 15,
+      "sources": 8,
+      "per_day": {
+        "2026-09-28": 8,
+        "2026-09-29": 5,
+        "2026-09-30": 10,
+        "2026-10-01": 7,
+        "2026-10-02": 7,
+        "2026-10-03": 4,
+        "2026-10-04": 4,
+        "2026-10-05": 3,
+        "2026-10-06": 8,
+        "2026-10-07": 5,
+        "2026-10-08": 5,
+        "2026-10-09": 5,
+        "2026-10-10": 5,
+        "2026-10-11": 4,
+        "2026-10-12": 1
+      }
+    },
+    "planted": "a66f0fd87c39",
+    "stats": {
+      "n": 82,
+      "days": [
+        "2026-09-28",
+        "2026-09-29",
+        "2026-09-30",
+        "2026-10-01",
+        "2026-10-02",
+        "2026-10-03",
+        "2026-10-04",
+        "2026-10-05",
+        "2026-10-06",
+        "2026-10-07",
+        "2026-10-08",
+        "2026-10-09",
+        "2026-10-10",
+        "2026-10-11",
+        "2026-10-12"
+      ],
+      "cost_total": 0.020611,
+      "cost_per_request": 0.00025135,
+      "cost_p50": 0.0,
+      "cost_p95": 0.0010329,
+      "tokens_total": 106588,
+      "tokens_per_request": 1299.9,
+      "ms_p50": 16640.0,
+      "ms_p95": 62150.0,
+      "llm_calls": 252,
+      "cache_hits": 0,
+      "cache_hit_rate": 0.0,
+      "refusals": 10
+    }
+  },
+  "drill": {
+    "ms": 8.7,
+    "search_ms": 8.2,
+    "index_warm_ms": 18932.4,
+    "searched": 34,
+    "funnel": [
+      [
+        "all traces",
+        34
+      ],
+      [
+        "matched any of 4 complaint word(s)",
+        12
+      ]
+    ],
+    "trace_id": "a66f0fd87c39",
+    "proof": "HC-4003-structured-006 says: \"the refund cannot be returned to the card and must be issued as account credit instead\". The answer says the money goes back to the original card, and never mentions account credit.",
+    "found": true
+  },
+  "cost": {
+    "before": {
+      "n": 83,
+      "days": [
+        "2026-09-28",
+        "2026-09-29",
+        "2026-09-30",
+        "2026-10-01",
+        "2026-10-02",
+        "2026-10-03",
+        "2026-10-04",
+        "2026-10-05",
+        "2026-10-06",
+        "2026-10-07",
+        "2026-10-08",
+        "2026-10-09",
+        "2026-10-10",
+        "2026-10-11",
+        "2026-10-12",
+        "2026-10-13"
+      ],
+      "cost_total": 0.021083,
+      "cost_per_request": 0.00025401,
+      "cost_p50": 0.0,
+      "cost_p95": 0.0010329,
+      "tokens_total": 109256,
+      "tokens_per_request": 1316.3,
+      "ms_p50": 17920.0,
+      "ms_p95": 62150.0,
+      "llm_calls": 254,
+      "cache_hits": 0,
+      "cache_hit_rate": 0.0,
+      "refusals": 10
+    },
+    "replay": {
+      "requests": 83,
+      "exact_hits": 68,
+      "similar_hits": 0,
+      "misses": 15,
+      "blocked_near_misses": 0,
+      "hit_rate": 0.8193,
+      "cost_per_request_before": 0.00025401,
+      "cost_per_request_after": 6.03e-05,
+      "tokens_per_request_before": 1316.3,
+      "tokens_per_request_after": 320.4,
+      "calls_before": 254,
+      "calls_after": 48,
+      "token_saving": 0.7566,
+      "cost_saving": 0.7626
+    },
+    "thresholds": {
+      "0.5": {
+        "hit_rate": 0.8193,
+        "saving": 0.7626,
+        "wrong": 0,
+        "served": 48
+      },
+      "0.7": {
+        "hit_rate": 0.8193,
+        "saving": 0.7626,
+        "wrong": 0,
+        "served": 48
+      },
+      "0.8": {
+        "hit_rate": 0.8193,
+        "saving": 0.7626,
+        "wrong": 0,
+        "served": 48
+      },
+      "0.9": {
+        "hit_rate": 0.8193,
+        "saving": 0.7626,
+        "wrong": 0,
+        "served": 45
+      }
+    }
+  },
+  "guard": {
+    "regressions": [
+      {
+        "id": "R01",
+        "catches_the_failure": true,
+        "allows_a_correct_answer": true
+      }
+    ]
+  },
+  "live": {
+    "id": "R01",
+    "ok": true,
+    "reasons": [],
+    "trace_id": "cf68ad678877",
+    "answer": "If the card token was dropped during migration, the refund cannot be returned to the original card and must be issued as account credit instead. [HC-4003-structured-006]"
+  }
+}

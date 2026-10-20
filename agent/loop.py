@@ -136,6 +136,10 @@ class AgentRun:
     elapsed_s: float = 0.0
     error: str | None = None
 
+    # Week 11. The handle a customer can quote, and the full record behind it.
+    trace_id: str = ""
+    trace: object | None = None
+
     # Week 10. Tokens and cost, so the squad race is settled by numbers rather
     # than by call count, which hides what a hand-off actually costs.
     meter: "Meter" = field(default_factory=lambda: __import__(
@@ -233,6 +237,7 @@ def run(
     guarded: bool = True,
     output_markers: tuple[str, ...] = (),
     toolbox=None,
+    log_trace: bool = True,
 ) -> AgentRun:
     """Work one ticket. Every step is recorded, and every exit is a named reason.
 
@@ -251,11 +256,21 @@ def run(
     # MCP is the default path. A caller that passes its own toolbox is opting
     # out, which the acceptance tests do so they can drive the loop without
     # starting subprocesses.
+    # Week 11. One trace per request. The meter hangs spans off it, so cost
+    # per step and the cost total can never disagree.
+    from obs.trace import Trace, current_config
+
+    trace = Trace(question=ticket, runner="agent", config=current_config("agent"))
+    result.trace_id = trace.trace_id
+    result.meter.trace = trace
+
     own_toolbox = toolbox is None
     if own_toolbox:
         from agent.toolbox import connect
 
+        boot = trace.span("toolbox:connect")
         toolbox = connect()
+        boot.close(detail=f"{len(toolbox.names())} tool(s)")
     result.servers = list(getattr(toolbox, "servers_up", []))
     result.tools_discovered = toolbox.names()
 
@@ -350,7 +365,12 @@ def run(
                 print(f"  step {budget.steps}: repeated action, warned")
             continue
 
+        tool_span = trace.span(f"tool:{action['tool']}")
         outcome = toolbox.execute(action["tool"], action["args"])
+        tool_span.close(
+            detail=f"{len(outcome.chunks)} chunk(s)",
+            ok=outcome.ok,
+        )
 
         if guarded and outcome.chunks:
             # Layer 2. Retrieved text is the untrusted channel. Strip anything
@@ -411,6 +431,16 @@ def run(
         # one run would restart every process on every ticket.
         toolbox.close()
 
+    trace.answer = result.answer
+    trace.refused = result.refused
+    trace.chunk_ids = [c["chunk_id"] for c in result.retrieved]
+    trace.citations = [c.chunk_id for c in result.citations if c.resolves]
+    trace.error = result.error
+    if log_trace:
+        from obs import store
+
+        store.write(trace)
+    result.trace = trace
     return result
 
 

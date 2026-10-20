@@ -772,7 +772,7 @@ def test_w7_stop_conditions() -> None:
             '{"thought":"a","tool":"lookup_error_code","args":{"code":"ERR-4032"}}',
             '{"thought":"b","tool":"finish","args":{"answer":"Re-map it [HC-4002-structured-004]."}}',
         )
-        done = loop_mod.run("ERR-4032?", toolbox=local_toolbox())
+        done = loop_mod.run("ERR-4032?", toolbox=local_toolbox(), log_trace=False)
         check("a loop that calls finish stops with finished", done.stop_reason == FINISHED)
         check("a finished run records every step", len(done.steps) == 2)
         check("a finished run resolves its citations", any(c.resolves for c in done.citations))
@@ -786,12 +786,12 @@ def test_w7_stop_conditions() -> None:
         ]
 
         loop_mod._decide = _scripted(loop_mod, *endless)
-        capped = loop_mod.run("never ends", budget=Budget(max_steps=3), toolbox=local_toolbox())
+        capped = loop_mod.run("never ends", budget=Budget(max_steps=3), toolbox=local_toolbox(), log_trace=False)
         check("the step limit stops the loop", capped.stop_reason == STEP_LIMIT)
         check("the step limit is obeyed exactly", len(capped.steps) == 3, str(len(capped.steps)))
 
         loop_mod._decide = _scripted(loop_mod, *endless)
-        broke = loop_mod.run("never ends", budget=Budget(max_steps=99, max_llm_calls=4), toolbox=local_toolbox())
+        broke = loop_mod.run("never ends", budget=Budget(max_steps=99, max_llm_calls=4), toolbox=local_toolbox(), log_trace=False)
         check("the call limit stops the loop", broke.stop_reason == CALL_LIMIT)
 
         # A repeat is warned once, then stopped. The first live run repeated at
@@ -803,7 +803,7 @@ def test_w7_stop_conditions() -> None:
             '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
             '{"thought":"fine","tool":"finish","args":{"answer":"ok [HC-4002-structured-004]"}}',
         )
-        warned = loop_mod.run("repeats once, then takes the hint", toolbox=local_toolbox())
+        warned = loop_mod.run("repeats once, then takes the hint", toolbox=local_toolbox(), log_trace=False)
         check(
             "the first repeat is a warning, not a stop",
             warned.stop_reason == FINISHED,
@@ -821,7 +821,7 @@ def test_w7_stop_conditions() -> None:
             '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
             '{"thought":"a","tool":"search_help_centre","args":{"query":"vat"}}',
         )
-        stuck = loop_mod.run("going nowhere", toolbox=local_toolbox())
+        stuck = loop_mod.run("going nowhere", toolbox=local_toolbox(), log_trace=False)
         check(
             "a repeat after the warning does stop the loop",
             stuck.stop_reason == REPEAT_LIMIT,
@@ -829,7 +829,7 @@ def test_w7_stop_conditions() -> None:
         )
 
         loop_mod._decide = _scripted(loop_mod, *endless)
-        cut = loop_mod.run("never ends", budget=Budget(max_steps=2), toolbox=local_toolbox())
+        cut = loop_mod.run("never ends", budget=Budget(max_steps=2), toolbox=local_toolbox(), log_trace=False)
         check("a cut-short run still produces an answer", bool(cut.answer))
         check("a cut-short run is never labelled complete", not cut.completed)
 
@@ -838,7 +838,7 @@ def test_w7_stop_conditions() -> None:
             "I will search the help centre now.",
             '{"thought":"ok","tool":"finish","args":{"answer":"done [HC-4002-structured-004]"}}',
         )
-        recovered = loop_mod.run("bad json first", toolbox=local_toolbox())
+        recovered = loop_mod.run("bad json first", toolbox=local_toolbox(), log_trace=False)
         check("an unparsable reply costs a step, not the run", recovered.stop_reason == FINISHED)
         check("the unparsable step is recorded", recovered.steps[0].tool == "(unparsed)")
     finally:
@@ -1116,7 +1116,7 @@ def test_w8_loop_guard_stops_a_loop() -> None:
         loop_mod._forced_answer = lambda t, m, b, *_: "REFUSED: stub."
 
         loop_mod._decide = _scripted(loop_mod, *reworded)
-        guarded_run = loop_mod.run("SLA?", budget=Budget(similar_guard=True), toolbox=local_toolbox())
+        guarded_run = loop_mod.run("SLA?", budget=Budget(similar_guard=True), toolbox=local_toolbox(), log_trace=False)
         check(
             "the loop guard stops an agent that rewords the same search",
             guarded_run.stop_reason == REPEAT_LIMIT,
@@ -1124,7 +1124,7 @@ def test_w8_loop_guard_stops_a_loop() -> None:
         )
 
         loop_mod._decide = _scripted(loop_mod, *reworded)
-        old_run = loop_mod.run("SLA?", budget=Budget(similar_guard=False, max_steps=6), toolbox=local_toolbox())
+        old_run = loop_mod.run("SLA?", budget=Budget(similar_guard=False, max_steps=6), toolbox=local_toolbox(), log_trace=False)
         check(
             "the Week 7 guard alone does NOT stop it",
             old_run.stop_reason != REPEAT_LIMIT,
@@ -1816,6 +1816,284 @@ def test_w10_context_resend_is_measurable() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Week 11: logging, the support drill, cost, and the failure-to-test loop
+# ---------------------------------------------------------------------------
+def test_w11_trace_shape() -> None:
+    """A trace has to carry enough to find a request AND to replay it."""
+    from obs.trace import Trace, current_config, new_trace_id, replay_config
+
+    a, b = new_trace_id(), new_trace_id()
+    check("trace ids are unique", a != b)
+    check("a trace id is short enough to read down a phone", len(a) <= 16, f"{len(a)} chars")
+
+    t = Trace(question="ERR-4032?", config=current_config("agent"))
+    s1 = t.span("agent:step 1")
+    s1.close(ms=120.0, input_tokens=900, output_tokens=40, cost=0.0004)
+    s2 = t.span("tool:lookup_error_code")
+    s2.close(ms=15.0, detail="1 chunk")
+
+    row = t.as_dict()
+    for field_name in ("trace_id", "at", "question", "answer", "chunk_ids",
+                       "citations", "spans", "config", "ms", "total_tokens", "cost"):
+        check(f"a trace records {field_name}", field_name in row)
+
+    check("spans are recorded per step", len(row["spans"]) == 2)
+    check("a span carries its own ms", row["spans"][0]["ms"] == 120.0)
+    check("a span carries its own tokens", row["spans"][0]["input_tokens"] == 900)
+    check("a span carries its own cost", row["spans"][0]["cost"] == 0.0004)
+    check(
+        "a tool step is a span too, even with no tokens",
+        row["spans"][1]["name"].startswith("tool:") and row["spans"][1]["ms"] == 15.0,
+    )
+    check("trace totals are the sum of its spans", row["total_tokens"] == 940)
+    check(
+        "a call with no tokens is not counted as an LLM call",
+        row["llm_calls"] == 1,
+        str(row["llm_calls"]),
+    )
+
+    for key in ("model", "prompt_sha", "corpus_sha", "strategy"):
+        check(f"the config captures {key}, so the run can be reproduced", key in row["config"])
+
+    same = replay_config(row)
+    check("a trace taken now reproduces under today's settings", same["reproducible"])
+    drifted = replay_config(dict(row, config=dict(row["config"], prompt_sha="old")))
+    check(
+        "a trace from an older prompt is reported as drifted, not reproducible",
+        not drifted["reproducible"] and "prompt_sha" in drifted["drifted"],
+    )
+
+
+def test_w11_meter_emits_spans() -> None:
+    """Cost per step must come from the same place as cost in total."""
+    from agent.meter import Meter
+    from obs.trace import Trace
+
+    trace = Trace(question="x")
+    meter = Meter()
+    meter.trace = trace
+
+    class Reply:
+        usage_metadata = {"input_tokens": 300, "output_tokens": 50}
+        response_metadata = {"token_usage": {"cost": 0.0}}
+
+    meter.record("agent", "step 1", Reply(), 1.5)
+    meter.record("agent", "step 2", Reply(), 0.5)
+
+    check("every metered call becomes a span", len(trace.spans) == 2)
+    check("the span carries the call's own time", trace.spans[0].ms == 1500.0)
+    check(
+        "trace tokens and meter tokens agree",
+        trace.total_tokens == meter.total_tokens,
+        f"{trace.total_tokens} vs {meter.total_tokens}",
+    )
+    check("a free model's zero cost is replaced by the priced estimate", trace.cost > 0)
+
+
+def test_w11_log_and_search() -> None:
+    """The log has to be searchable, and the drill has to find the needle."""
+    from obs import plant, search, store
+
+    rows = store.read_all()
+    if not rows:
+        info("w11 trace log", "not built yet, skipping")
+        return
+
+    check("the log holds traces", len(rows) >= 20, f"{len(rows)} traces")
+    check("every trace has an id", all(r.get("trace_id") for r in rows))
+    check("every trace has a timestamp", all(r.get("at") for r in rows))
+    check("every trace has spans", all(r.get("spans") for r in rows))
+    check(
+        "some traces carry measured per-step tokens",
+        any(any(s.get("input_tokens") for s in r["spans"]) for r in rows),
+    )
+
+    first = rows[0]["trace_id"]
+    check("a trace can be fetched by id", store.by_id(first) is not None)
+    check("an unknown id returns nothing rather than guessing", store.by_id("nope") is None)
+
+    planted = [r for r in rows if (r.get("config") or {}).get("planted")]
+    if not planted:
+        info("w11 planted answer", "not planted yet, skipping the drill check")
+        return
+    check("exactly one bad answer is planted", len(planted) == 1, str(len(planted)))
+
+    hits, report = search.search("refund card migration token", limit=5)
+    check("the search returns in a few milliseconds", report["ms"] < 500, f"{report['ms']}ms")
+    ids = [h.trace_id for h in hits]
+    check(
+        "the planted answer is in the top 5 for the complaint's words",
+        planted[0]["trace_id"] in ids,
+        str(ids[:3]),
+    )
+    check(
+        "it ranks first",
+        ids and ids[0] == planted[0]["trace_id"],
+        f"top was {ids[0] if ids else 'nothing'}",
+    )
+
+    # The drill must be won by searching, not by reading the marker.
+    import inspect
+    source = inspect.getsource(search)
+    check(
+        "the search never filters on the planted marker",
+        "planted" not in source,
+        "finding the needle by its label would prove nothing",
+    )
+
+
+def test_w11_proof_step() -> None:
+    """Finding it is not enough. You have to be able to show it is wrong."""
+    from obs import plant, store
+
+    rows = [r for r in store.read_all() if (r.get("config") or {}).get("planted")]
+    if not rows:
+        info("w11 planted answer", "not planted yet, skipping")
+        return
+
+    bad, why = plant.contradicts_its_citation(rows[0])
+    check("the planted answer is proved wrong against its own citation", bad)
+    check("the proof quotes the corpus line", plant.WHAT_THE_CORPUS_SAYS in why)
+    check("the proof names the chunk", plant.CITED_CHUNK in why)
+
+    correct = dict(
+        rows[0],
+        answer=(
+            "The refund cannot go back to the card. It must be issued as "
+            "account credit instead [HC-4003-structured-006]."
+        ),
+    )
+    check("a correct answer is not flagged", not plant.contradicts_its_citation(correct)[0])
+
+    unrelated = dict(
+        rows[0],
+        answer="Re-map the line item under Billing then Tax Codes [HC-4002-structured-004].",
+        citations=["HC-4002-structured-004"],
+    )
+    check("an unrelated answer is not flagged", not plant.contradicts_its_citation(unrelated)[0])
+
+
+def test_w11_cache_is_fenced() -> None:
+    """A cached answer is only valid under the settings that produced it."""
+    import tempfile
+    from pathlib import Path
+
+    from obs.cache import AnswerCache, codes_in, similarity
+
+    cache = AnswerCache(path=Path(tempfile.mktemp(suffix=".json")))
+    cache.clear()
+    entry = cache.put(
+        "Getting ERR-4032 on an invoice line. What is the fix?",
+        answer="Re-map the line item under Billing then Tax Codes.",
+        chunk_ids=[], citations=[], refused=False, trace_id="T07",
+    )
+    entry.fence = "fence-a"
+
+    check("the same question hits exactly", cache.lookup(
+        "Getting ERR-4032 on an invoice line. What is the fix?",
+        now_fence="fence-a").kind == "exact")
+    check(
+        "a reworded question still hits",
+        cache.lookup("hi, getting ERR-4032 on an invoice line. What is the fix?",
+                     now_fence="fence-a").hit,
+    )
+    check(
+        "a different fence empties the cache rather than serving stale answers",
+        not cache.lookup("Getting ERR-4032 on an invoice line. What is the fix?",
+                         now_fence="fence-b").hit,
+    )
+
+    # The dangerous near-miss, and the thing that stops it.
+    near = "Getting ERR-4044 on an invoice line. What is the fix?"
+    score = similarity(near, entry.question)
+    check(
+        "two questions differing only by error code score above the threshold",
+        score >= cache.threshold,
+        f"{score:.3f} vs threshold {cache.threshold}",
+    )
+    found = cache.lookup(near, now_fence="fence-a")
+    check(
+        "and are NOT served, because the codes differ",
+        not found.hit,
+        "this is the near-miss that would hand a customer the wrong fix",
+    )
+    check("the block is explained", "error code" in found.blocked_by, found.blocked_by)
+    check(
+        "codes are compared by identity, not as words",
+        codes_in(near) != codes_in(entry.question),
+    )
+
+
+def test_w11_cost_improved_and_risk_measured() -> None:
+    """A saving only counts if the wrong answers were counted too."""
+    from obs import measure, store
+
+    if not store.read_all():
+        info("w11 trace log", "not built yet, skipping")
+        return
+
+    rep = measure.replay()
+    d = rep.as_dict()
+    check("the replay covers the whole log", d["requests"] >= 20, str(d["requests"]))
+    check(
+        "cost per request goes down",
+        d["cost_per_request_after"] < d["cost_per_request_before"],
+        f"{d['cost_per_request_before']:.8f} -> {d['cost_per_request_after']:.8f}",
+    )
+    check(
+        "LLM calls go down",
+        d["calls_after"] < d["calls_before"],
+        f"{d['calls_before']} -> {d['calls_after']}",
+    )
+    check("the saving is reported as a rate", 0 < d["cost_saving"] < 1, str(d["cost_saving"]))
+
+    risk = measure.risk()
+    check(
+        "the risk is measured, not assumed",
+        risk.served > 0,
+        "a risk check that serves nothing proves nothing",
+    )
+    check(
+        "no cached answer is served for a different ticket",
+        risk.wrong == 0,
+        f"{risk.wrong} wrong of {risk.served} served: {risk.cases[:2]}",
+    )
+
+
+def test_w11_failure_became_a_test() -> None:
+    """The loop closes only if the check fires on the real failing answer."""
+    from evals.w11_regressions import REGRESSIONS
+
+    check("at least one failure is pinned", len(REGRESSIONS) >= 1)
+
+    for reg in REGRESSIONS:
+        check(f"{reg.id} records where it was found", bool(reg.found_in_trace))
+        check(f"{reg.id} records what went wrong", len(reg.what_went_wrong) > 80)
+        check(f"{reg.id} keeps the answer that actually failed", bool(reg.failing_answer))
+
+        ok_bad, reasons = reg.judge(reg.failing_answer)
+        check(
+            f"{reg.id} catches the answer that failed",
+            not ok_bad,
+            "a regression that passes its own bug guards nothing",
+        )
+        check(f"{reg.id} says why it caught it", bool(reasons))
+
+        good = (
+            "The refund cannot go back to the original payment method because "
+            "the token was dropped during migration. It must be issued as "
+            "account credit instead [HC-4003-structured-006]."
+        )
+        ok_good, why_not = reg.judge(good)
+        check(
+            f"{reg.id} allows a correct answer",
+            ok_good,
+            f"false alarm: {why_not}",
+        )
+
+
+
+# ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(description="Acceptance tests.")
     parser.add_argument(
@@ -1872,6 +2150,13 @@ def main() -> None:
         ("w10 specialists are narrow", test_w10_specialists_are_narrow),
         ("w10 verdict rule", test_w10_verdict_rule),
         ("w10 context re-send is measurable", test_w10_context_resend_is_measurable),
+        ("w11 trace shape", test_w11_trace_shape),
+        ("w11 meter emits spans", test_w11_meter_emits_spans),
+        ("w11 log and search", test_w11_log_and_search),
+        ("w11 proof step", test_w11_proof_step),
+        ("w11 cache is fenced", test_w11_cache_is_fenced),
+        ("w11 cost improved, risk measured", test_w11_cost_improved_and_risk_measured),
+        ("w11 failure became a test", test_w11_failure_became_a_test),
     ]
     if args.with_generation:
         groups.append(("generation and refusal", test_generation))
