@@ -1,34 +1,150 @@
-# helpcentre-rag
+# Tier-1 Deflection Assistant
 
-Weeks 3, 4 and 5, Task Set A.
+A support agent pastes a customer's ticket. This answers it from the help
+centre, names the exact paragraph it used, and refuses when the help centre
+does not hold the answer. The agent sends the reply or escalates it.
 
-**Week 3** ingests a 6-article help-centre drop about a billing migration and
-measures whether the chunker can find an answer inside a troubleshooting table.
-
-**Week 4** separates the two kinds of retrieval failure, then buys back
-hit-rate@3 with exactly one change.
-
-**Week 5** reads 20 real traces by hand and turns "it fails sometimes" into a
-ranked list of named problems, with one chosen to fix next and a prediction
-written before the fix.
+It is called a deflection assistant because the job is to settle tier-1 tickets
+without a human reading the article first. It only earns that name if wrong
+answers are rare and refusals are honest, which is what the measurement in this
+repo is for.
 
 > **The corpus is invented.** The 6 articles in [corpus/](corpus/) were written
 > for this exercise. There is no real "BL1", no real "BL2", and no real billing
-> migration. The error codes, cutover dates, plan names and API endpoints are all
-> made up. They are shaped like real help-centre articles on purpose, because the
-> point of the exercise is to test a chunker against realistic troubleshooting
+> migration. The error codes, cutover dates, plan names and API endpoints are
+> all made up. They are shaped like real help-centre articles on purpose,
+> because the point is to test retrieval against realistic troubleshooting
 > tables. Do not read any of it as documentation for a real product.
 
-The deliverables are **[results/results.md](results/results.md)** (Week 3),
-**[results/w4_results.md](results/w4_results.md)** (Week 4) and
-**[results/w5_results.md](results/w5_results.md)** (Week 5). Everything else in
-this repo exists to produce them.
+---
+
+## Start here
+
+Four commands. Nothing else is needed to see this working.
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env          # paste an OpenRouter key into it
+
+python app.py doctor          # is this machine ready?
+python app.py index           # build the search index, once
+python app.py ask "A customer's invoice is stuck on ERR-4032. What do I tell them?"
+python app.py demo            # the four-part demo. Free, offline, ~20 seconds
+```
+
+`doctor` is the one to run when anything looks wrong. It checks the Python
+version, the packages, the key, the corpus and the index, and for each failure
+it prints the command that fixes it.
+
+**You do not need a key for most of this.** `demo`, `eval`, `logs` and `report`
+all read the log and the corpus. Only `ask` and `demo --live` call the network.
+
+---
+
+## The one entry point
+
+```
+python app.py <command>
+```
+
+| Command | What it does | Costs calls? |
+|---|---|---|
+| `doctor` | Check this machine is ready. Run it first. | no |
+| `index` | Build the search index. Once, and after a corpus change. | no |
+| `ask "<ticket>"` | **Answer one ticket.** This is the product. | yes, 2-4 |
+| `demo` | The four-part demo. Add `--live` for a real call in part 1. | no |
+| `eval` | The full test suite, 300+ checks. | no |
+| `logs --trace <id>` | Reopen one past answer, with its cost per step. | no |
+| `logs --find <words>` | Find a past answer from a vague complaint. | no |
+| `logs --suspicious` | Answers worth a second look. | no |
+| `report` | Every headline number, and the file it came from. | no |
+
+The eleven `python -m evals.run_*` commands still exist and still work. They are
+how each week's result is rebuilt. `app.py` is the door; they are the rooms.
+
+---
+
+## What you are looking at when you run `ask`
+
+```
+== answer ==============================================================
+  ERR-4032 means the invoice line references a legacy tax code that no
+  longer exists in BL2 [HC-4002-structured-004]. Re-map the line item to
+  a current tax code, then reissue the invoice [HC-4002-structured-004].
+
+  trace a4c60ee535d4   3 step(s)   3 call(s)   26.59s
+  help centre: HC-4002-structured-004
+```
+
+- **`[HC-4002-structured-004]`** is a chunk id. It resolves to one paragraph in
+  one article. You can read it yourself in
+  [results/chunks_structured.md](results/chunks_structured.md).
+- **`help centre:`** lists only the sources that really resolve.
+- **`not help centre:`** appears when the answer cited a past support ticket
+  instead. Those are real tickets, not inventions, but one ticket is not
+  policy. The line is there so you can tell the two apart before you send the
+  reply.
+- **`NOT A REAL CHUNK`** in red means the answer cited something that does not
+  exist. Do not send it.
+- **`trace a4c60ee535d4`** is the handle. `python app.py logs --trace
+  a4c60ee535d4` reopens that exact answer months later, with the time and the
+  cost of every step.
+
+---
+
+## What runs when you ask a question
+
+1. **Start the tool servers** listed in `mcp_servers.json` and ask each one
+   what tools it has. Nothing is hard-coded. *(Week 9, MCP)*
+2. **Loop:** pick a tool, run it, read the result, pick again. Budgets stop it
+   running away: 6 steps, 8 calls, 120 seconds, and a repeated-action guard.
+   *(Week 7)*
+3. **Retrieve** with a dense vector arm and a BM25 keyword arm, fused by RRF,
+   over chunks that never split a table row from its header. *(Weeks 3 and 4)*
+4. **Answer** from retrieved text only, cite every sentence, and refuse when
+   the facts are missing. *(Week 6)*
+5. **Scan** retrieved text and the outgoing reply for injected instructions.
+   *(Week 8)*
+6. **Write a trace:** the question, the answer, the chunks, and one span per
+   step with its own milliseconds and cost. *(Week 11)*
+
+---
+
+## Honest limits
+
+Read **[KNOWN_WEAK_SPOTS.md](KNOWN_WEAK_SPOTS.md)** before you trust any number
+here. It lists eight things that are wrong with this app, written before anyone
+asked, with the fix for each. The short version:
+
+- The 60 eval cases were written by one person who knew the corpus.
+- The relevance judge never disagreed with itself, so that agreement figure
+  means nothing. The faithfulness one is real.
+- The injection guard is a pattern list, and pattern lists are beatable. The
+  real containment is that the tools can only read.
+- The free tier caps this at 50 model calls a day, so no sample here is large.
+
+---
+
+## The numbers, and where each one lives
+
+`python app.py report` prints this table with the file beside each row.
 
 | Week | Question | Result |
 |---|---|---|
-| 3 | Does a structure-aware chunker find answers inside tables better? | hit@5 tied 8/8, but header-less chunks served fell 7 to 0 |
-| 4 | Can one change buy back hit-rate@3? | **28/30 to 30/30** by fusing BM25 into the vector search |
-| 5 | What is actually going wrong, ranked? | retrieval **15/15** and the app still wrong **6 of 20**. Every failure happened after the right chunk was on screen |
+| 3 | Does a structure-aware chunker find answers inside tables better? | hit@5 tied 8/8, header-less chunks served fell **7 to 0** |
+| 4 | Can one change buy back hit-rate@3? | **28/30 to 30/30**, by fusing BM25 into the vector search |
+| 5 | What is actually going wrong, ranked? | retrieval **15/15**, the app still wrong **6 of 20** |
+| 6 | Can a prompt fix the biggest failure? | **46.5% to 79.1%** on the 43 cases both runs scored |
+| 7 | Is an agent better than a fixed workflow? | agent **12/12**, fixed workflow **8/12** |
+| 8 | Does a right answer mean a right path? | outcome **12/12**, path **10/12** |
+| 9 | Can tools be discovered rather than imported? | a server bolted on, **0 bytes** of the agent changed |
+| 10 | Is a team of agents better than one? | single **11/12**, squad **10/12**. Kept the single agent |
+| 11 | What does one request cost, and can it cost less? | cost per request **-76%**, with **0 of 48** wrong answers served |
+| 12 | Can a stranger run it, and can I defend it? | this README, `app.py`, and KNOWN_WEAK_SPOTS.md |
+
+---
+
+# The detail, week by week
 
 ## What this measures
 
@@ -116,6 +232,31 @@ evals/
 ask.py               interactive terminal client
 test_acceptance.py   asserts every claim the write-ups make
 results/             all generated output, committed
+```
+
+Weeks 7 to 12 added three more directories and two files at the root:
+
+```
+app.py               THE ENTRY POINT. Every command below is a subcommand of it
+demo.py              the four-part demo: a run, a failure, a number, what next
+KNOWN_WEAK_SPOTS.md  eight things wrong with this app, and the fix for each
+agent/
+  loop.py            the agent loop: thought, tool, observation, repeat
+  tools.py           the three tools, and what their descriptions have to say
+  budget.py          steps, calls, seconds, and the repeated-action guard
+  guard.py           injection patterns, fencing, and output validation
+  mcp_client.py      JSON-RPC over stdio, hand-written, no framework
+  toolbox.py         discovers tools from mcp_servers.json at start-up
+  meter.py           tokens and cost, taken from the provider's own report
+  squad.py           agent cards, task lifecycle, manager and two specialists
+mcp_servers/         the servers the agent discovers, including a hostile one
+obs/
+  trace.py           a trace and its spans, with the config pinned at run time
+  store.py           one JSONL file per UTC day
+  search.py          the support drill: find one answer from a vague complaint
+  cache.py           the answer cache, and the config fence around it
+  measure.py         the saving and the risk, measured together
+  plant.py           the planted bad answer the drill has to find
 ```
 
 ## Setup

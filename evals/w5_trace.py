@@ -83,6 +83,24 @@ def prompt_fingerprint() -> str:
     return _sha256(SYSTEM_PROMPT + "\n---\n" + USER_TEMPLATE)
 
 
+def known_prompt_fingerprints() -> dict[str, str]:
+    """Every prompt version this codebase still holds, by fingerprint.
+
+    A trace recorded under v1 is not stale because v2 is now active. It is a
+    record of what v1 did, and it stays reproducible for as long as v1 is in
+    the file. What WOULD make it unusable is the prompt being deleted, or the
+    corpus changing underneath its chunk ids.
+
+    This exists so the staleness check can tell those two cases apart.
+    """
+    from rag.answerer import _PROMPTS
+
+    return {
+        version: _sha256(prompt + "\n---\n" + USER_TEMPLATE)
+        for version, prompt in _PROMPTS.items()
+    }
+
+
 def trace_config(strategy: str, mode: str, k: int) -> dict:
     """Every setting that could move an answer, captured with the trace.
 

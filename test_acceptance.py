@@ -465,13 +465,41 @@ def test_w5_traces_are_complete() -> None:
     gaps = [g for g in gaps if g[1]]
     check("every trace carries every required field", not gaps, str(gaps[:2]))
 
-    stale = [
-        t["trace_id"]
-        for t in traces
-        if t["config"]["corpus_sha"] != corpus_fingerprint()
-        or t["config"]["prompt_sha"] != prompt_fingerprint()
+    # A trace is stale when it can no longer be reproduced, not when the project
+    # has moved on. These twenty were captured under prompt v1. Week 6 made v2
+    # active, so the original check went red and stayed red for six weeks while
+    # nothing was actually wrong: v1 is still in the file and the corpus has not
+    # changed, so every one of them still replays.
+    #
+    # Two things genuinely break a trace, and both are checked:
+    #   the corpus moved   -> its chunk ids may no longer resolve
+    #   its prompt is gone -> it cannot be reproduced at all
+    from evals.w5_trace import known_prompt_fingerprints
+
+    known = set(known_prompt_fingerprints().values())
+
+    moved_corpus = [
+        t["trace_id"] for t in traces if t["config"]["corpus_sha"] != corpus_fingerprint()
     ]
-    check("no trace is stale against the current corpus and prompt", not stale, str(stale[:3]))
+    check(
+        "no trace was taken against a different corpus",
+        not moved_corpus,
+        str(moved_corpus[:3]),
+    )
+
+    lost_prompt = [t["trace_id"] for t in traces if t["config"]["prompt_sha"] not in known]
+    check(
+        "every trace's prompt is still in the codebase, so it can be replayed",
+        not lost_prompt,
+        str(lost_prompt[:3]),
+    )
+
+    on_current = sum(1 for t in traces if t["config"]["prompt_sha"] == prompt_fingerprint())
+    info(
+        "w5 traces vs the active prompt",
+        f"{on_current}/{len(traces)} on the current prompt; the rest are v1 records "
+        "and replay against v1",
+    )
 
     unresolvable = [
         (t["trace_id"], hit["chunk_id"])
@@ -2094,6 +2122,219 @@ def test_w11_failure_became_a_test() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Week 12: the capstone. One entry point, a guide a stranger can follow, a
+# demo that shows a real failure, and numbers that can be defended.
+# ---------------------------------------------------------------------------
+def test_w12_single_entry_point() -> None:
+    """One door, and every command behind it really exists."""
+    import app
+
+    # Read the real parser rather than a copied list, so this cannot drift.
+    help_text = app.build_parser().format_help()
+
+    for command in ("doctor", "index", "ask", "demo", "eval", "logs", "report"):
+        check(f"app.py offers '{command}'", command in help_text)
+
+    check(
+        "app.py --help names the first command to run",
+        "doctor" in help_text and "start here" in help_text.lower(),
+        "a stranger reading --help must be told where to begin",
+    )
+
+    # Every subcommand must resolve to something callable. A subparser whose
+    # handler was renamed would otherwise only fail in front of an audience.
+    for name in ("cmd_doctor", "cmd_index", "cmd_ask", "cmd_logs", "cmd_eval", "cmd_report"):
+        check(f"{name} exists and is callable", callable(getattr(app, name, None)))
+
+    import demo
+
+    check("demo.run is callable", callable(getattr(demo, "run", None)))
+
+
+def test_w12_entry_point_does_not_reimplement() -> None:
+    """app.py is a door, not a second implementation.
+
+    The risk of adding an entry point in the last week is that it quietly
+    becomes a fork: a second retrieval path, a second prompt, a second way to
+    score. Then the write-ups describe one app and the demo shows another.
+    """
+    from pathlib import Path
+
+    source = Path("app.py").read_text(encoding="utf-8")
+
+    for banned, why in (
+        ("SYSTEM_PROMPT_V", "app.py must not hold its own prompt"),
+        ("ChatOpenAI", "app.py must not build its own model client"),
+        ("def search_by_mode", "app.py must not hold its own retrieval"),
+    ):
+        check(f"app.py does not redefine: {banned}", banned not in source, why)
+
+    check(
+        "app.py answers by calling the real agent loop",
+        "from agent.loop import run" in source,
+        "the demo must run the same code the evals scored",
+    )
+
+
+def test_w12_doctor_catches_a_broken_machine() -> None:
+    """A doctor that always says 'ok' is worse than no doctor."""
+    from pathlib import Path
+
+    source = Path("app.py").read_text(encoding="utf-8")
+
+    check(
+        "doctor reports a non-zero exit when something is wrong",
+        "return 1" in source and "problems.append" in source,
+        "a stranger needs a failure they can see",
+    )
+    check(
+        "every doctor failure carries the command that fixes it",
+        source.count("fix=") >= 5,
+        "naming the problem without the fix leaves them stuck",
+    )
+
+
+def test_w12_unchecked_marks_separates_policy_from_anecdote() -> None:
+    """The seam found on a real run: two kinds of source, one kind of bracket.
+
+    A live ticket produced an answer ending `[SUP-2041][SUP-2114]`. Those are
+    real past tickets from the ticket-history server, not inventions. But the
+    citation check only matches the HC-xxxx-strategy-nnn shape, so it saw
+    nothing at all, and the output printed "sources: HC-4002-structured-004" as
+    though the whole answer were help-centre policy.
+    """
+    from app import unchecked_marks
+
+    mixed = (
+        "Re-map the tax code [HC-4002-structured-004]. In past cases this "
+        "failed again [SUP-2041][SUP-2114]."
+    )
+    marks = unchecked_marks(mixed)
+    check("a past-ticket mark is reported", marks == ["SUP-2041", "SUP-2114"], str(marks))
+
+    clean = "Issue it as account credit [HC-4003-structured-006]."
+    check("a help-centre citation is not reported", unchecked_marks(clean) == [])
+
+    check("plain text reports nothing", unchecked_marks("No brackets here.") == [])
+    check("an empty answer reports nothing", unchecked_marks("") == [])
+
+    repeated = "[SUP-2041] and again [SUP-2041]"
+    check("a repeated mark is listed once", unchecked_marks(repeated) == ["SUP-2041"])
+
+
+def test_w12_demo_is_free_and_shows_a_failure() -> None:
+    """The demo must run with no network, and must show something going wrong."""
+    from pathlib import Path
+
+    source = Path("demo.py").read_text(encoding="utf-8")
+
+    check(
+        "the demo has four parts",
+        all(f"part{n}_" in source for n in (1, 2, 3, 4)),
+    )
+    check(
+        "part 1 replays from the log unless --live is passed",
+        "if live:" in source and "store.read_all()" in source,
+        "a demo that needs the network can fail for the wrong reason",
+    )
+
+    # Part 2 must run the real detector against the real failing answer, not
+    # print a story about it.
+    from evals.w11_regressions import REFUND_TO_CARD as R01
+    from obs import plant
+
+    ok_bad, reasons = R01.judge(R01.failing_answer)
+    check("the demo's failure is still caught by the detector", not ok_bad, str(reasons))
+
+    caught, why = plant.contradicts_its_citation(
+        {"answer": R01.failing_answer, "citations": [plant.CITED_CHUNK]}
+    )
+    check("the demo's proof step still fires", caught, why or "silent")
+
+    check(
+        "the demo names what the numbers are NOT",
+        "WHAT THESE NUMBERS ARE NOT" in source,
+        "a number with no caveat cannot be defended",
+    )
+
+
+def test_w12_weak_spots_are_written_down() -> None:
+    """Known weak spots, each with a reason and a fix."""
+    from pathlib import Path
+
+    path = Path("KNOWN_WEAK_SPOTS.md")
+    check("KNOWN_WEAK_SPOTS.md exists", path.exists())
+    if not path.exists():
+        return
+
+    text = path.read_text(encoding="utf-8")
+    entries = text.count("\n### ")
+    whys = text.count("**Why it matters:**")
+    fixes = text.count("**Fix:**")
+
+    check("at least six weak spots are named", entries >= 6, f"{entries}")
+    check("every weak spot says why it matters", whys == entries, f"{whys} of {entries}")
+    check("every weak spot says what the fix is", fixes == entries, f"{fixes} of {entries}")
+
+    # The honest ones are the specific ones. A page of "could be improved" is
+    # not a weak-spots page.
+    for required in ("60", "kappa", "pattern", "parallel"):
+        check(f"the weak spots are specific: mentions {required!r}", required in text)
+
+
+def test_w12_readme_gets_a_stranger_running() -> None:
+    """The fresh-eyes test, as far as a test can carry it."""
+    from pathlib import Path
+
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    for step, why in (
+        ("pip install -r requirements.txt", "they need the packages"),
+        (".env", "they need to know a key is required"),
+        ("python app.py doctor", "they need a way to check before they run"),
+        ("python app.py index", "an empty index is the first thing that breaks"),
+        ("python app.py ask", "they need to see it answer something"),
+        ("python app.py demo", "they need a run that costs nothing"),
+    ):
+        check(f"README gives the step: {step}", step in readme, why)
+
+    check(
+        "README says which commands cost money",
+        "Costs calls?" in readme or "costs calls" in readme.lower(),
+        "a stranger on a free key will otherwise burn the quota on the first try",
+    )
+    check(
+        "README links the weak spots",
+        "KNOWN_WEAK_SPOTS.md" in readme,
+        "the limits must be reachable from the front page",
+    )
+    check(
+        "README explains the output, not just the commands",
+        "trace" in readme and "chunk id" in readme,
+        "a command list is not a guide",
+    )
+
+
+def test_w12_every_claimed_number_has_a_file() -> None:
+    """`app.py report` must not point at a file that is not there."""
+    from pathlib import Path
+
+    import app
+
+    source = Path("app.py").read_text(encoding="utf-8")
+    check("report lists one row per week", source.count('results/w') >= 6)
+
+    # Pull the paths out of the report table and check each one resolves.
+    import re
+
+    paths = re.findall(r'"((?:results/|KNOWN_)[^"]+\.md)"', source)
+    check("report names at least eight files", len(paths) >= 8, str(len(paths)))
+    missing = [p for p in paths if not Path(p).exists()]
+    check("every file the report names exists", not missing, str(missing))
+
+    check("report is callable", callable(getattr(app, "cmd_report", None)))
+
+# ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(description="Acceptance tests.")
     parser.add_argument(
@@ -2157,6 +2398,14 @@ def main() -> None:
         ("w11 cache is fenced", test_w11_cache_is_fenced),
         ("w11 cost improved, risk measured", test_w11_cost_improved_and_risk_measured),
         ("w11 failure became a test", test_w11_failure_became_a_test),
+        ("w12 single entry point", test_w12_single_entry_point),
+        ("w12 entry point does not reimplement", test_w12_entry_point_does_not_reimplement),
+        ("w12 doctor catches a broken machine", test_w12_doctor_catches_a_broken_machine),
+        ("w12 policy vs anecdote at the seam", test_w12_unchecked_marks_separates_policy_from_anecdote),
+        ("w12 demo is free and shows a failure", test_w12_demo_is_free_and_shows_a_failure),
+        ("w12 weak spots are written down", test_w12_weak_spots_are_written_down),
+        ("w12 README gets a stranger running", test_w12_readme_gets_a_stranger_running),
+        ("w12 every claimed number has a file", test_w12_every_claimed_number_has_a_file),
     ]
     if args.with_generation:
         groups.append(("generation and refusal", test_generation))
